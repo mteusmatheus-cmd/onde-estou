@@ -1,57 +1,43 @@
-// ⚙️ CONFIGURAÇÃO - Substitua pelos seus dados do Supabase
-const SUPABASE_URL = https://ikczlcmcbrlhdlopkoqg.supabase.co;
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3psY21jYnJsaGRsb3Brb3FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMjAxMTYsImV4cCI6MjA3NTY5NjExNn0.GxxdTvkzMwOMY6yO8HareaB4OC2ibVNTC_63EBjrDZc;
+// ⚙️ CONFIGURAÇÃO SUPABASE
+const SUPABASE_URL = 'https://ikczlcmcbrlhdlopkoqg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3psY21jYnJsaGRsb3Brb3FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMjAxMTYsImV4cCI6MjA3NTY5NjExNn0.GxxdTvkzMwOMY6yO8HareaB4OC2ibVNTC_63EBjrDZc';
 
 const { useState, useEffect } = React;
-const { createRoot } = ReactDOM;
 
-const OndeEstouApp = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
-  const [currentView, setCurrentView] = useState('home');
-  const [currentUser, setCurrentUser] = useState(null);
+const App = () => {
   const [users, setUsers] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [locations, setLocations] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showCreateEvent, setShowCreateEvent] = useState(false);
-  const [showAddLocation, setShowAddLocation] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
-  const [showParticipants, setShowParticipants] = useState(false);
-  const [currentEventParticipants, setCurrentEventParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [showRegister, setShowRegister] = useState(false);
+  const [loggedUser, setLoggedUser] = useState(null);
+  const [message, setMessage] = useState('');
 
-  const categories = [
-    'Comemoração aniversário',
-    'Reunião',
-    'Treinamento',
-    'Integração',
-    'Café com DH',
-    'Indicadores',
-    'Aniversáriantes do mês',
-    'Outros'
-  ];
-
-  // Funções do Supabase
-  const fetchData = async (key) => {
+  // Buscar usuários do banco
+  const loadUsers = async () => {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/dados?key=eq.${key}`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/dados?key=eq.users`, {
         headers: {
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`
         }
       });
       const data = await response.json();
-      return data[0] ? JSON.parse(data[0].value) : [];
+      const usersData = data[0] ? JSON.parse(data[0].value) : [];
+      setUsers(usersData);
+      setLoading(false);
     } catch (error) {
-      console.error('Erro ao buscar:', error);
-      return [];
+      setMessage('❌ Erro ao conectar: ' + error.message);
+      setLoading(false);
     }
   };
 
-  const saveData = async (key, value) => {
+  // Salvar usuários no banco
+  const saveUsers = async (newUsers) => {
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/dados?key=eq.${key}`, {
+      await fetch(`${SUPABASE_URL}/rest/v1/dados?key=eq.users`, {
         method: 'PATCH',
         headers: {
           'apikey': SUPABASE_KEY,
@@ -59,216 +45,447 @@ const OndeEstouApp = () => {
           'Content-Type': 'application/json',
           'Prefer': 'return=minimal'
         },
-        body: JSON.stringify({ value: JSON.stringify(value) })
+        body: JSON.stringify({ value: JSON.stringify(newUsers) })
       });
       return true;
     } catch (error) {
-      console.error('Erro ao salvar:', error);
+      setMessage('❌ Erro ao salvar: ' + error.message);
       return false;
     }
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      const [usersData, eventsData, locationsData] = await Promise.all([
-        fetchData('users'),
-        fetchData('events'),
-        fetchData('locations')
-      ]);
-      setUsers(usersData);
-      setEvents(eventsData);
-      setLocations(locationsData);
-      setLoading(false);
-    };
-    loadData();
+    loadUsers();
   }, []);
 
-  const handleLogin = (email, password) => {
+  // Login
+  const handleLogin = () => {
     const user = users.find(u => u.email === email && u.password === password);
     if (user) {
-      setCurrentUser(user);
-      setIsLoggedIn(true);
+      setLoggedUser(user);
+      setMessage('✅ Login realizado!');
     } else {
-      alert('Email ou senha incorretos');
+      setMessage('❌ Email ou senha incorretos');
     }
   };
 
-  const handleRegister = async (userData) => {
+  // Registro
+  const handleRegister = async () => {
+    if (!name || !email || !password || !birthDate) {
+      setMessage('❌ Preencha todos os campos');
+      return;
+    }
+
+    if (users.find(u => u.email === email)) {
+      setMessage('❌ Email já cadastrado');
+      return;
+    }
+
     const newUser = {
       id: Date.now().toString(),
-      name: userData.name,
-      email: userData.email,
-      password: userData.password,
-      birthDate: userData.birthDate,
-      photo: '👤',
-      interests: ''
+      name,
+      email,
+      password,
+      birthDate,
+      photo: '👤'
     };
-    
+
     const updatedUsers = [...users, newUser];
-    setUsers(updatedUsers);
-    await saveData('users', updatedUsers);
-    
-    setCurrentUser(newUser);
-    setIsLoggedIn(true);
-    setShowRegister(false);
-    alert('✅ Conta criada com sucesso!');
-  };
+    const saved = await saveUsers(updatedUsers);
 
-  const handleCreateEvent = async (eventData) => {
-    const newEvent = {
-      id: Date.now().toString(),
-      ...eventData,
-      creator: currentUser.id,
-      participants: JSON.stringify([currentUser.id]),
-      visibleTo: JSON.stringify(eventData.visibleTo.length > 0 ? eventData.visibleTo : users.map(u => u.id))
-    };
-    
-    const updatedEvents = [...events, newEvent];
-    setEvents(updatedEvents);
-    await saveData('events', updatedEvents);
-    setShowCreateEvent(false);
-  };
-
-  const handleAddLocation = async (locationData) => {
-    const newLocation = {
-      id: Date.now().toString(),
-      userId: currentUser.id,
-      ...locationData
-    };
-    
-    const updatedLocations = [...locations, newLocation];
-    setLocations(updatedLocations);
-    await saveData('locations', updatedLocations);
-    setShowAddLocation(false);
-  };
-
-  const getUserLocation = (userId) => {
-    const now = new Date();
-    const userLocations = locations.filter(l => l.userId == userId);
-    
-    for (const loc of userLocations) {
-      const start = new Date(`${loc.startDate}T${loc.startTime}`);
-      const end = new Date(`${loc.endDate}T${loc.endTime}`);
-      if (now >= start && now <= end) {
-        return loc.location;
-      }
+    if (saved) {
+      setUsers(updatedUsers);
+      setLoggedUser(newUser);
+      setMessage('✅ Conta criada com sucesso!');
+      setShowRegister(false);
     }
-    return 'Localização não informada';
   };
 
-  const getBirthdaysForDate = (date) => {
-    const month = date.getMonth();
-    const day = date.getDate();
-    
-    return users.filter(user => {
-      if (!user.birthDate) return false;
-      const birthDateParts = user.birthDate.split('-');
-      const birthMonth = parseInt(birthDateParts[1]) - 1;
-      const birthDay = parseInt(birthDateParts[2]);
-      return birthMonth === month && birthDay === day;
-    });
-  };
-
-  const getBirthdaysInMonth = (month) => {
-    return users.filter(user => {
-      if (!user.birthDate) return false;
-      const birthDateParts = user.birthDate.split('-');
-      const birthMonth = parseInt(birthDateParts[1]) - 1;
-      return birthMonth === month;
-    });
-  };
-
-  const getEventsForDate = (date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return events.filter(event => {
-      if (!currentUser || !event.date) return false;
-      const visibleTo = typeof event.visibleTo === 'string' ? JSON.parse(event.visibleTo) : event.visibleTo;
-      return event.date === dateStr && visibleTo.includes(currentUser.id);
-    });
-  };
-
-  // Componente de Loading
+  // Tela de Loading
   if (loading) {
-    return React.createElement('div', {
-      className: 'min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4'
-    },
-      React.createElement('div', { className: 'text-center bg-white rounded-2xl p-8 max-w-md' },
-        React.createElement('div', { className: 'text-6xl mb-4 animate-bounce' }, '📍'),
-        React.createElement('p', { className: 'text-gray-800 text-xl font-semibold mb-2' }, 'Onde Estou'),
-        React.createElement('p', { className: 'text-gray-600' }, 'Conectando à base compartilhada...')
-      )
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'Arial, sans-serif'
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '40px',
+          borderRadius: '20px',
+          textAlign: 'center',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+        }}>
+          <div style={{ fontSize: '60px', marginBottom: '20px' }}>📍</div>
+          <h1 style={{ fontSize: '28px', marginBottom: '10px', color: '#333' }}>Onde Estou</h1>
+          <p style={{ color: '#666' }}>Conectando à base compartilhada...</p>
+        </div>
+      </div>
     );
   }
 
-  // LoginScreen - Simplifiquei para não ocupar muito espaço
-  const LoginScreen = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+  // Usuário Logado
+  if (loggedUser) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        padding: '40px',
+        fontFamily: 'Arial, sans-serif'
+      }}>
+        <div style={{
+          maxWidth: '600px',
+          margin: '0 auto',
+          background: 'white',
+          padding: '40px',
+          borderRadius: '20px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+            <div style={{ fontSize: '60px', marginBottom: '10px' }}>{loggedUser.photo}</div>
+            <h2 style={{ fontSize: '32px', color: '#333', marginBottom: '5px' }}>
+              Bem-vindo, {loggedUser.name}! 🎉
+            </h2>
+            <p style={{ color: '#666', fontSize: '14px' }}>{loggedUser.email}</p>
+            <p style={{ color: '#999', fontSize: '12px', marginTop: '5px' }}>
+              Aniversário: {new Date(loggedUser.birthDate).toLocaleDateString('pt-BR')}
+            </p>
+          </div>
 
-    return React.createElement('div', {
-      className: 'min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4'
-    },
-      React.createElement('div', { className: 'bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full' },
-        React.createElement('div', { className: 'text-center mb-8' },
-          React.createElement('div', { className: 'text-6xl mb-4' }, '📍'),
-          React.createElement('h1', { className: 'text-3xl font-bold text-gray-800 mb-2' }, 'Onde Estou'),
-          React.createElement('p', { className: 'text-gray-600' }, 'Conecte-se com pessoas e eventos')
-        ),
-        React.createElement('div', { className: 'space-y-4' },
-          React.createElement('input', {
-            type: 'email',
-            placeholder: 'Email',
-            value: email,
-            onChange: (e) => setEmail(e.target.value),
-            className: 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
-          }),
-          React.createElement('input', {
-            type: 'password',
-            placeholder: 'Senha',
-            value: password,
-            onChange: (e) => setPassword(e.target.value),
-            className: 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
-          }),
-          React.createElement('button', {
-            onClick: () => handleLogin(email, password),
-            className: 'w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition'
-          }, 'Entrar'),
-          React.createElement('button', {
-            onClick: () => setShowRegister(true),
-            className: 'w-full border border-purple-600 text-purple-600 py-3 rounded-lg font-semibold hover:bg-purple-50 transition'
-          }, 'Criar Conta')
-        )
-      )
+          <div style={{
+            background: '#f7fafc',
+            padding: '20px',
+            borderRadius: '10px',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{ fontSize: '18px', color: '#333', marginBottom: '10px' }}>
+              📊 Estatísticas da Base
+            </h3>
+            <p style={{ color: '#666', marginBottom: '5px' }}>
+              👥 Total de usuários: <strong>{users.length}</strong>
+            </p>
+            <p style={{ color: '#666', fontSize: '12px' }}>
+              Base compartilhada funcionando! Todos veem os mesmos dados.
+            </p>
+          </div>
+
+          <div style={{
+            background: '#edf2f7',
+            padding: '15px',
+            borderRadius: '10px',
+            marginBottom: '20px'
+          }}>
+            <h4 style={{ fontSize: '16px', color: '#333', marginBottom: '10px' }}>
+              👥 Usuários na Base:
+            </h4>
+            {users.map(user => (
+              <div key={user.id} style={{
+                background: 'white',
+                padding: '10px',
+                borderRadius: '8px',
+                marginBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <span style={{ fontSize: '24px' }}>{user.photo}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 'bold', color: '#333' }}>{user.name}</div>
+                  <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={() => setLoggedUser(null)} style={{
+            width: '100%',
+            padding: '15px',
+            background: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}>
+            Sair
+          </button>
+        </div>
+      </div>
     );
-  };
-
-  // Retorno simplificado - mostra apenas tela de login ou mensagem
-  if (!isLoggedIn) {
-    return showRegister ? 
-      React.createElement('div', { className: 'p-8 text-center' },
-        React.createElement('h2', {}, 'Formulário de registro - Em desenvolvimento'),
-        React.createElement('button', {
-          onClick: () => setShowRegister(false),
-          className: 'mt-4 bg-purple-600 text-white px-6 py-2 rounded'
-        }, 'Voltar')
-      ) : 
-      React.createElement(LoginScreen);
   }
 
-  return React.createElement('div', { className: 'p-8 text-center' },
-    React.createElement('h1', { className: 'text-3xl font-bold mb-4' }, `Bem-vindo, ${currentUser.name}!`),
-    React.createElement('p', { className: 'text-gray-600 mb-4' }, 'Sistema funcionando com banco compartilhado!'),
-    React.createElement('button', {
-      onClick: () => {
-        setIsLoggedIn(false);
-        setCurrentUser(null);
-      },
-      className: 'bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600'
-    }, 'Sair')
+  // Tela de Registro
+  if (showRegister) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        fontFamily: 'Arial, sans-serif'
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '40px',
+          borderRadius: '20px',
+          maxWidth: '400px',
+          width: '100%',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+            <div style={{ fontSize: '60px', marginBottom: '10px' }}>📍</div>
+            <h2 style={{ fontSize: '28px', color: '#333' }}>Criar Conta</h2>
+          </div>
+
+          {message && (
+            <div style={{
+              padding: '15px',
+              marginBottom: '20px',
+              borderRadius: '8px',
+              background: message.includes('✅') ? '#d1fae5' : '#fee2e2',
+              color: message.includes('✅') ? '#065f46' : '#991b1b',
+              fontSize: '14px'
+            }}>
+              {message}
+            </div>
+          )}
+
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
+              Nome Completo *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Seu nome"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '2px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '14px'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
+              Email *
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '2px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '14px'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
+              Senha *
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mínimo 6 caracteres"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '2px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '14px'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
+              Data de Nascimento *
+            </label>
+            <input
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '2px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '14px'
+              }}
+            />
+          </div>
+
+          <button onClick={handleRegister} style={{
+            width: '100%',
+            padding: '15px',
+            background: '#667eea',
+            color: 'white',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            marginBottom: '10px'
+          }}>
+            Criar Conta
+          </button>
+
+          <button onClick={() => { setShowRegister(false); setMessage(''); }} style={{
+            width: '100%',
+            padding: '15px',
+            background: 'white',
+            color: '#667eea',
+            border: '2px solid #667eea',
+            borderRadius: '10px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}>
+            Voltar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Tela de Login
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <div style={{
+        background: 'white',
+        padding: '40px',
+        borderRadius: '20px',
+        maxWidth: '400px',
+        width: '100%',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <div style={{ fontSize: '60px', marginBottom: '10px' }}>📍</div>
+          <h1 style={{ fontSize: '32px', color: '#333', marginBottom: '5px' }}>Onde Estou</h1>
+          <p style={{ color: '#666', fontSize: '14px' }}>Conecte-se com pessoas e eventos</p>
+        </div>
+
+        {message && (
+          <div style={{
+            padding: '15px',
+            marginBottom: '20px',
+            borderRadius: '8px',
+            background: message.includes('✅') ? '#d1fae5' : '#fee2e2',
+            color: message.includes('✅') ? '#065f46' : '#991b1b',
+            fontSize: '14px'
+          }}>
+            {message}
+          </div>
+        )}
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
+            Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="seu@email.com"
+            style={{
+              width: '100%',
+              padding: '12px',
+              border: '2px solid #e5e7eb',
+              borderRadius: '8px',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
+            Senha
+          </label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Sua senha"
+            style={{
+              width: '100%',
+              padding: '12px',
+              border: '2px solid #e5e7eb',
+              borderRadius: '8px',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+
+        <button onClick={handleLogin} style={{
+          width: '100%',
+          padding: '15px',
+          background: '#667eea',
+          color: 'white',
+          border: 'none',
+          borderRadius: '10px',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          marginBottom: '10px'
+        }}>
+          Entrar
+        </button>
+
+        <button onClick={() => { setShowRegister(true); setMessage(''); }} style={{
+          width: '100%',
+          padding: '15px',
+          background: 'white',
+          color: '#667eea',
+          border: '2px solid #667eea',
+          borderRadius: '10px',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          cursor: 'pointer'
+        }}>
+          Criar Conta
+        </button>
+
+        <div style={{
+          marginTop: '20px',
+          padding: '15px',
+          background: '#f7fafc',
+          borderRadius: '8px',
+          fontSize: '12px',
+          color: '#666'
+        }}>
+          <strong>📊 Base Compartilhada Ativa!</strong><br/>
+          Usuários cadastrados: <strong>{users.length}</strong><br/>
+          Todos que acessarem este link verão os mesmos dados.
+        </div>
+      </div>
+    </div>
   );
 };
 
 // Renderiza o App
-const root = createRoot(document.getElementById('root'));
-root.render(React.createElement(OndeEstouApp));
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
