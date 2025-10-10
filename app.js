@@ -1,491 +1,311 @@
-// ⚙️ CONFIGURAÇÃO SUPABASE
-const SUPABASE_URL = 'https://ikczlcmcbrlhdlopkoqg.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3psY21jYnJsaGRsb3Brb3FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMjAxMTYsImV4cCI6MjA3NTY5NjExNn0.GxxdTvkzMwOMY6yO8HareaB4OC2ibVNTC_63EBjrDZc';
+// ========== COMPONENTES DA UI ==========
 
-const { useState, useEffect } = React;
-
-const App = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+// LoginScreen
+const LoginScreen = ({ handleLogin, setShowRegister }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [birthDate, setBirthDate] = useState('');
-  const [showRegister, setShowRegister] = useState(false);
-  const [loggedUser, setLoggedUser] = useState(null);
-  const [message, setMessage] = useState('');
 
-  // Buscar usuários do banco
-  const loadUsers = async () => {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/dados?key=eq.users`, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      });
-      const data = await response.json();
-      const usersData = data[0] ? JSON.parse(data[0].value) : [];
-      setUsers(usersData);
-      setLoading(false);
-    } catch (error) {
-      setMessage('❌ Erro ao conectar: ' + error.message);
-      setLoading(false);
-    }
-  };
-
-  // Salvar usuários no banco
-  const saveUsers = async (newUsers) => {
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/dados?key=eq.users`, {
-        method: 'PATCH',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({ value: JSON.stringify(newUsers) })
-      });
-      return true;
-    } catch (error) {
-      setMessage('❌ Erro ao salvar: ' + error.message);
-      return false;
-    }
-  };
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  // Login
-  const handleLogin = () => {
-    const user = users.find(u => u.email === email && u.password === password);
-    if (user) {
-      setLoggedUser(user);
-      setMessage('✅ Login realizado!');
-    } else {
-      setMessage('❌ Email ou senha incorretos');
-    }
-  };
-
-  // Registro
-  const handleRegister = async () => {
-    if (!name || !email || !password || !birthDate) {
-      setMessage('❌ Preencha todos os campos');
+  const onLogin = () => {
+    if (!email || !password) {
+      alert('Preencha todos os campos');
       return;
     }
-
-    if (users.find(u => u.email === email)) {
-      setMessage('❌ Email já cadastrado');
-      return;
-    }
-
-    const newUser = {
-      id: Date.now().toString(),
-      name,
-      email,
-      password,
-      birthDate,
-      photo: '👤'
-    };
-
-    const updatedUsers = [...users, newUser];
-    const saved = await saveUsers(updatedUsers);
-
-    if (saved) {
-      setUsers(updatedUsers);
-      setLoggedUser(newUser);
-      setMessage('✅ Conta criada com sucesso!');
-      setShowRegister(false);
-    }
+    handleLogin(email, password);
   };
 
-  // Tela de Loading
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'Arial, sans-serif'
-      }}>
-        <div style={{
-          background: 'white',
-          padding: '40px',
-          borderRadius: '20px',
-          textAlign: 'center',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-        }}>
-          <div style={{ fontSize: '60px', marginBottom: '20px' }}>📍</div>
-          <h1 style={{ fontSize: '28px', marginBottom: '10px', color: '#333' }}>Onde Estou</h1>
-          <p style={{ color: '#666' }}>Conectando à base compartilhada...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Usuário Logado
-  if (loggedUser) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        padding: '40px',
-        fontFamily: 'Arial, sans-serif'
-      }}>
-        <div style={{
-          maxWidth: '600px',
-          margin: '0 auto',
-          background: 'white',
-          padding: '40px',
-          borderRadius: '20px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-        }}>
-          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-            <div style={{ fontSize: '60px', marginBottom: '10px' }}>{loggedUser.photo}</div>
-            <h2 style={{ fontSize: '32px', color: '#333', marginBottom: '5px' }}>
-              Bem-vindo, {loggedUser.name}! 🎉
-            </h2>
-            <p style={{ color: '#666', fontSize: '14px' }}>{loggedUser.email}</p>
-            <p style={{ color: '#999', fontSize: '12px', marginTop: '5px' }}>
-              Aniversário: {new Date(loggedUser.birthDate).toLocaleDateString('pt-BR')}
-            </p>
-          </div>
-
-          <div style={{
-            background: '#f7fafc',
-            padding: '20px',
-            borderRadius: '10px',
-            marginBottom: '20px'
-          }}>
-            <h3 style={{ fontSize: '18px', color: '#333', marginBottom: '10px' }}>
-              📊 Estatísticas da Base
-            </h3>
-            <p style={{ color: '#666', marginBottom: '5px' }}>
-              👥 Total de usuários: <strong>{users.length}</strong>
-            </p>
-            <p style={{ color: '#666', fontSize: '12px' }}>
-              Base compartilhada funcionando! Todos veem os mesmos dados.
-            </p>
-          </div>
-
-          <div style={{
-            background: '#edf2f7',
-            padding: '15px',
-            borderRadius: '10px',
-            marginBottom: '20px'
-          }}>
-            <h4 style={{ fontSize: '16px', color: '#333', marginBottom: '10px' }}>
-              👥 Usuários na Base:
-            </h4>
-            {users.map(user => (
-              <div key={user.id} style={{
-                background: 'white',
-                padding: '10px',
-                borderRadius: '8px',
-                marginBottom: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}>
-                <span style={{ fontSize: '24px' }}>{user.photo}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 'bold', color: '#333' }}>{user.name}</div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button onClick={() => setLoggedUser(null)} style={{
-            width: '100%',
-            padding: '15px',
-            background: '#ef4444',
-            color: 'white',
-            border: 'none',
-            borderRadius: '10px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: 'pointer'
-          }}>
-            Sair
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Tela de Registro
-  if (showRegister) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-        fontFamily: 'Arial, sans-serif'
-      }}>
-        <div style={{
-          background: 'white',
-          padding: '40px',
-          borderRadius: '20px',
-          maxWidth: '400px',
-          width: '100%',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-        }}>
-          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-            <div style={{ fontSize: '60px', marginBottom: '10px' }}>📍</div>
-            <h2 style={{ fontSize: '28px', color: '#333' }}>Criar Conta</h2>
-          </div>
-
-          {message && (
-            <div style={{
-              padding: '15px',
-              marginBottom: '20px',
-              borderRadius: '8px',
-              background: message.includes('✅') ? '#d1fae5' : '#fee2e2',
-              color: message.includes('✅') ? '#065f46' : '#991b1b',
-              fontSize: '14px'
-            }}>
-              {message}
-            </div>
-          )}
-
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
-              Nome Completo *
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Seu nome"
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '14px'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
-              Email *
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu@email.com"
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '14px'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
-              Senha *
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '14px'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
-              Data de Nascimento *
-            </label>
-            <input
-              type="date"
-              value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '14px'
-              }}
-            />
-          </div>
-
-          <button onClick={handleRegister} style={{
-            width: '100%',
-            padding: '15px',
-            background: '#667eea',
-            color: 'white',
-            border: 'none',
-            borderRadius: '10px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            marginBottom: '10px'
-          }}>
-            Criar Conta
-          </button>
-
-          <button onClick={() => { setShowRegister(false); setMessage(''); }} style={{
-            width: '100%',
-            padding: '15px',
-            background: 'white',
-            color: '#667eea',
-            border: '2px solid #667eea',
-            borderRadius: '10px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: 'pointer'
-          }}>
-            Voltar
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Tela de Login
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      <div style={{
-        background: 'white',
-        padding: '40px',
-        borderRadius: '20px',
-        maxWidth: '400px',
-        width: '100%',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <div style={{ fontSize: '60px', marginBottom: '10px' }}>📍</div>
-          <h1 style={{ fontSize: '32px', color: '#333', marginBottom: '5px' }}>Onde Estou</h1>
-          <p style={{ color: '#666', fontSize: '14px' }}>Conecte-se com pessoas e eventos</p>
-        </div>
-
-        {message && (
-          <div style={{
-            padding: '15px',
-            marginBottom: '20px',
-            borderRadius: '8px',
-            background: message.includes('✅') ? '#d1fae5' : '#fee2e2',
-            color: message.includes('✅') ? '#065f46' : '#991b1b',
-            fontSize: '14px'
-          }}>
-            {message}
-          </div>
-        )}
-
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="seu@email.com"
-            style={{
-              width: '100%',
-              padding: '12px',
-              border: '2px solid #e5e7eb',
-              borderRadius: '8px',
-              fontSize: '14px'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>
-            Senha
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Sua senha"
-            style={{
-              width: '100%',
-              padding: '12px',
-              border: '2px solid #e5e7eb',
-              borderRadius: '8px',
-              fontSize: '14px'
-            }}
-          />
-        </div>
-
-        <button onClick={handleLogin} style={{
-          width: '100%',
-          padding: '15px',
-          background: '#667eea',
-          color: 'white',
-          border: 'none',
-          borderRadius: '10px',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          marginBottom: '10px'
-        }}>
-          Entrar
-        </button>
-
-        <button onClick={() => { setShowRegister(true); setMessage(''); }} style={{
-          width: '100%',
-          padding: '15px',
-          background: 'white',
-          color: '#667eea',
-          border: '2px solid #667eea',
-          borderRadius: '10px',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          cursor: 'pointer'
-        }}>
-          Criar Conta
-        </button>
-
-        <div style={{
-          marginTop: '20px',
-          padding: '15px',
-          background: '#f7fafc',
-          borderRadius: '8px',
-          fontSize: '12px',
-          color: '#666'
-        }}>
-          <strong>📊 Base Compartilhada Ativa!</strong><br/>
-          Usuários cadastrados: <strong>{users.length}</strong><br/>
-          Todos que acessarem este link verão os mesmos dados.
-        </div>
-      </div>
-    </div>
+  return h('div', { className: 'min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4' },
+    h('div', { className: 'bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full' },
+      h('div', { className: 'text-center mb-8' },
+        h('div', { className: 'text-6xl mb-4' }, '📍'),
+        h('h1', { className: 'text-3xl font-bold text-gray-800 mb-2' }, 'Onde Estou'),
+        h('p', { className: 'text-gray-600' }, 'Conecte-se com pessoas e eventos')
+      ),
+      h('div', { className: 'space-y-4' },
+        h('input', {
+          type: 'email',
+          placeholder: 'Email',
+          value: email,
+          onChange: (e) => setEmail(e.target.value),
+          className: 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+        }),
+        h('input', {
+          type: 'password',
+          placeholder: 'Senha',
+          value: password,
+          onChange: (e) => setPassword(e.target.value),
+          onKeyPress: (e) => e.key === 'Enter' && onLogin(),
+          className: 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+        }),
+        h('button', {
+          onClick: onLogin,
+          className: 'w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition'
+        }, 'Entrar'),
+        h('button', {
+          onClick: () => setShowRegister(true),
+          className: 'w-full border border-purple-600 text-purple-600 py-3 rounded-lg font-semibold hover:bg-purple-50 transition'
+        }, 'Criar Conta')
+      )
+    )
   );
 };
 
-// Renderiza o App
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(React.createElement(App));
+// RegisterScreen
+const RegisterScreen = ({ handleRegister, setShowRegister, users }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    birthDate: ''
+  });
+  const [error, setError] = useState('');
+
+  const onSubmit = () => {
+    setError('');
+    
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword || !formData.birthDate) {
+      setError('Por favor, preencha todos os campos');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('As senhas não coincidem');
+      return;
+    }
+
+    if (users.some(u => u.email === formData.email)) {
+      setError('Este email já está cadastrado');
+      return;
+    }
+
+    const { confirmPassword, ...userData } = formData;
+    handleRegister(userData);
+  };
+
+  return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto' },
+    h('div', { className: 'bg-white rounded-2xl max-w-md w-full my-8' },
+      h('div', { className: 'p-6' },
+        h('div', { className: 'flex items-center justify-between mb-6' },
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Criar Conta'),
+          h('button', { onClick: () => setShowRegister(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
+        ),
+        error && h('div', { className: 'bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4' }, error),
+        h('div', { className: 'space-y-4' },
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Nome Completo *'),
+            h('input', {
+              type: 'text',
+              value: formData.name,
+              onChange: (e) => setFormData({...formData, name: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Seu nome completo'
+            })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Email *'),
+            h('input', {
+              type: 'email',
+              value: formData.email,
+              onChange: (e) => setFormData({...formData, email: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'seu@email.com'
+            })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Senha *'),
+            h('input', {
+              type: 'password',
+              value: formData.password,
+              onChange: (e) => setFormData({...formData, password: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Mínimo 6 caracteres'
+            })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Confirmar Senha *'),
+            h('input', {
+              type: 'password',
+              value: formData.confirmPassword,
+              onChange: (e) => setFormData({...formData, confirmPassword: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Digite a senha novamente'
+            })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data de Nascimento *'),
+            h('input', {
+              type: 'date',
+              value: formData.birthDate,
+              onChange: (e) => setFormData({...formData, birthDate: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+            })
+          ),
+          h('button', {
+            onClick: onSubmit,
+            className: 'w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition'
+          }, 'Criar Conta')
+        )
+      )
+    )
+  );
+};
+
+// Header
+const Header = ({ currentUser, getBirthdaysInMonth, setShowProfile }) => {
+  return h('div', { className: 'bg-white shadow-sm border-b sticky top-0 z-10' },
+    h('div', { className: 'max-w-6xl mx-auto px-4 py-4 flex items-center justify-between' },
+      h('div', { className: 'flex items-center gap-2' },
+        h(MapPin, { className: 'text-purple-600', size: 28 }),
+        h('h1', { className: 'text-xl font-bold text-gray-800' }, 'Onde Estou')
+      ),
+      h('div', { className: 'flex items-center gap-4' },
+        h('button', { className: 'relative' },
+          h(Bell, { className: 'text-gray-600', size: 24 }),
+          h('span', {
+            className: 'absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center'
+          }, getBirthdaysInMonth(new Date().getMonth()).length)
+        ),
+        h('button', { onClick: () => setShowProfile(true) },
+          h('div', { className: 'text-2xl' }, currentUser?.photo)
+        )
+      )
+    )
+  );
+};
+
+// Navigation
+const Navigation = ({ currentView, setCurrentView }) => {
+  return h('div', { className: 'bg-white border-t fixed bottom-0 left-0 right-0 z-10' },
+    h('div', { className: 'max-w-6xl mx-auto px-4 py-3 flex justify-around' },
+      h('button', {
+        onClick: () => setCurrentView('home'),
+        className: `flex flex-col items-center gap-1 ${currentView === 'home' ? 'text-purple-600' : 'text-gray-500'}`
+      },
+        h(MapPin, { size: 24 }),
+        h('span', { className: 'text-xs' }, 'Início')
+      ),
+      h('button', {
+        onClick: () => setCurrentView('calendar'),
+        className: `flex flex-col items-center gap-1 ${currentView === 'calendar' ? 'text-purple-600' : 'text-gray-500'}`
+      },
+        h(Calendar, { size: 24 }),
+        h('span', { className: 'text-xs' }, 'Calendário')
+      ),
+      h('button', {
+        onClick: () => setCurrentView('people'),
+        className: `flex flex-col items-center gap-1 ${currentView === 'people' ? 'text-purple-600' : 'text-gray-500'}`
+      },
+        h(Users, { size: 24 }),
+        h('span', { className: 'text-xs' }, 'Pessoas')
+      )
+    )
+  );
+};
+
+// HomeView
+const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, setShowCreateEvent, setShowAddLocation, users }) => {
+  const userLocation = getUserLocation(currentUser.id);
+  const todayBirthdays = getBirthdaysForDate(new Date());
+  const upcomingEvents = events
+    .filter(e => {
+      const visibleTo = typeof e.visibleTo === 'string' ? JSON.parse(e.visibleTo) : e.visibleTo;
+      return visibleTo.includes(currentUser.id);
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 3);
+
+  return h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24' },
+    h('div', { className: 'bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl p-6 text-white mb-6' },
+      h('h2', { className: 'text-2xl font-bold mb-2' }, `Olá, ${currentUser?.name.split(' ')[0]}! 👋`),
+      h('div', { className: 'flex items-center gap-2 mt-3' },
+        h(MapPin, { size: 20 }),
+        h('span', null, userLocation)
+      ),
+      h('button', {
+        onClick: () => setShowAddLocation(true),
+        className: 'mt-4 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg flex items-center gap-2 transition'
+      },
+        h(Plus, { size: 16 }),
+        'Atualizar Localização'
+      )
+    ),
+    todayBirthdays.length > 0 && h('div', { className: 'bg-pink-50 border border-pink-200 rounded-xl p-4 mb-6' },
+      h('h3', { className: 'font-bold text-pink-800 mb-3 flex items-center gap-2' },
+        h(Gift, { size: 20 }),
+        'Aniversariantes de Hoje 🎉'
+      ),
+      ...todayBirthdays.map(user =>
+        h('div', { key: user.id, className: 'flex items-center gap-3 mb-2' },
+          h('div', { className: 'text-2xl' }, user.photo),
+          h('div', { className: 'font-medium' }, user.name)
+        )
+      )
+    ),
+    h('div', { className: 'flex items-center justify-between mb-4' },
+      h('h3', { className: 'text-lg font-bold text-gray-800' }, 'Próximos Eventos'),
+      h('button', {
+        onClick: () => setShowCreateEvent(true),
+        className: 'bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition'
+      },
+        h(Plus, { size: 20 }),
+        'Criar'
+      )
+    ),
+    h('div', { className: 'space-y-4' },
+      upcomingEvents.length > 0 ? upcomingEvents.map(event =>
+        h(EventCard, { key: event.id, event, users, currentUser })
+      ) : h('div', { className: 'text-center text-gray-500 py-8' }, 'Nenhum evento próximo')
+    )
+  );
+};
+
+// EventCard
+const EventCard = ({ event, users, currentUser }) => {
+  const creator = users.find(u => u.id == event.creator);
+  const participants = typeof event.participants === 'string' ? JSON.parse(event.participants) : event.participants;
+  const isParticipant = participants.includes(currentUser?.id);
+
+  return h('div', { className: 'bg-white rounded-xl shadow-sm border p-4 hover:shadow-md transition' },
+    h('div', { className: 'flex items-start justify-between mb-3' },
+      h('div', { className: 'flex-1' },
+        h('h4', { className: 'font-bold text-gray-800 mb-1' }, event.title),
+        h('span', { className: 'text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full' }, event.category)
+      )
+    ),
+    h('p', { className: 'text-gray-600 text-sm mb-3' }, event.description),
+    h('div', { className: 'space-y-2 mb-3' },
+      h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
+        h(Calendar, { size: 16 }),
+        h('span', null, `${new Date(event.date).toLocaleDateString('pt-BR')} às ${event.time}`)
+      ),
+      h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
+        h(MapPin, { size: 16 }),
+        h('span', null, event.location)
+      ),
+      h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
+        h(Users, { size: 16 }),
+        h('span', null, `${participants.length} participantes`)
+      )
+    ),
+    h('div', { className: 'flex items-center gap-2 mb-3' },
+      h('div', { className: 'text-xl' }, creator?.photo || '👤'),
+      h('span', { className: 'text-sm text-gray-600' }, `Criado por ${creator?.name || 'Usuário'}`)
+    ),
+    h('button', {
+      className: `w-full py-2 rounded-lg font-semibold transition ${
+        isParticipant
+          ? 'bg-green-100 text-green-700'
+          : 'bg-purple-600 text-white hover:bg-purple-700'
+      }`
+    }, isParticipant ? '✓ Participando' : 'Participar')
+  );
+};
+
+// (Continua na próxima parte...)
