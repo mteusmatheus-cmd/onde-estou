@@ -1,3 +1,245 @@
+// ⚙️ CONFIGURAÇÃO SUPABASE
+const SUPABASE_URL = 'https://ikczlcmcbrlhdlopkoqg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3psY21jYnJsaGRsb3Brb3FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMjAxMTYsImV4cCI6MjA3NTY5NjExNn0.GxxdTvkzMwOMY6yO8HareaB4OC2ibVNTC_63EBjrDZc';
+
+const { useState, useEffect, createElement: h } = React;
+const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake } = window.Icons;
+
+const App = () => {
+  // Estados
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const [currentView, setCurrentView] = useState('home');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [showAddLocation, setShowAddLocation] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [currentEventParticipants, setCurrentEventParticipants] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const categories = [
+    'Comemoração aniversário',
+    'Reunião',
+    'Treinamento',
+    'Integração',
+    'Café com DH',
+    'Indicadores',
+    'Aniversáriantes do mês',
+    'Outros'
+  ];
+
+  // Funções Supabase
+  const fetchData = async (key) => {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/dados?key=eq.${key}`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      const data = await response.json();
+      return data[0] ? JSON.parse(data[0].value) : [];
+    } catch (error) {
+      console.error('Erro ao buscar:', error);
+      return [];
+    }
+  };
+
+  const saveData = async (key, value) => {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/dados?key=eq.${key}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ value: JSON.stringify(value) })
+      });
+      return true;
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+      return false;
+    }
+  };
+
+  // Carregar dados
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      const [usersData, eventsData, locationsData] = await Promise.all([
+        fetchData('users'),
+        fetchData('events'),
+        fetchData('locations')
+      ]);
+      setUsers(usersData);
+      setEvents(eventsData);
+      setLocations(locationsData);
+      setLoading(false);
+    };
+    loadData();
+  }, []);
+
+  // Handlers
+  const handleLogin = (email, password) => {
+    const user = users.find(u => u.email === email && u.password === password);
+    if (user) {
+      setCurrentUser(user);
+      setIsLoggedIn(true);
+    } else {
+      alert('Email ou senha incorretos');
+    }
+  };
+
+  const handleRegister = async (userData) => {
+    const newUser = {
+      id: Date.now().toString(),
+      name: userData.name,
+      email: userData.email,
+      password: userData.password,
+      birthDate: userData.birthDate,
+      photo: '👤',
+      interests: ''
+    };
+    
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    await saveData('users', updatedUsers);
+    
+    setCurrentUser(newUser);
+    setIsLoggedIn(true);
+    setShowRegister(false);
+    alert('✅ Conta criada com sucesso!');
+  };
+
+  const handleCreateEvent = async (eventData) => {
+    const newEvent = {
+      id: Date.now().toString(),
+      ...eventData,
+      creator: currentUser.id,
+      participants: JSON.stringify([currentUser.id]),
+      visibleTo: JSON.stringify(eventData.visibleTo.length > 0 ? eventData.visibleTo : users.map(u => u.id))
+    };
+    
+    const updatedEvents = [...events, newEvent];
+    setEvents(updatedEvents);
+    await saveData('events', updatedEvents);
+    setShowCreateEvent(false);
+  };
+
+  const handleAddLocation = async (locationData) => {
+    const newLocation = {
+      id: Date.now().toString(),
+      userId: currentUser.id,
+      ...locationData
+    };
+    
+    const updatedLocations = [...locations, newLocation];
+    setLocations(updatedLocations);
+    await saveData('locations', updatedLocations);
+    setShowAddLocation(false);
+  };
+
+  const getUserLocation = (userId) => {
+    const now = new Date();
+    const userLocations = locations.filter(l => l.userId == userId);
+    
+    for (const loc of userLocations) {
+      const start = new Date(`${loc.startDate}T${loc.startTime}`);
+      const end = new Date(`${loc.endDate}T${loc.endTime}`);
+      if (now >= start && now <= end) {
+        return loc.location;
+      }
+    }
+    return 'Localização não informada';
+  };
+
+  const getBirthdaysForDate = (date) => {
+    const month = date.getMonth();
+    const day = date.getDate();
+    
+    return users.filter(user => {
+      if (!user.birthDate) return false;
+      const birthDateParts = user.birthDate.split('-');
+      const birthMonth = parseInt(birthDateParts[1]) - 1;
+      const birthDay = parseInt(birthDateParts[2]);
+      return birthMonth === month && birthDay === day;
+    });
+  };
+
+  const getBirthdaysInMonth = (month) => {
+    return users.filter(user => {
+      if (!user.birthDate) return false;
+      const birthDateParts = user.birthDate.split('-');
+      const birthMonth = parseInt(birthDateParts[1]) - 1;
+      return birthMonth === month;
+    });
+  };
+
+  const getEventsForDate = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return events.filter(event => {
+      if (!currentUser || !event.date) return false;
+      const visibleTo = typeof event.visibleTo === 'string' ? JSON.parse(event.visibleTo) : event.visibleTo;
+      return event.date === dateStr && visibleTo.includes(currentUser.id);
+    });
+  };
+
+  // Componente Loading
+  if (loading) {
+    return h('div', { className: 'min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4' },
+      h('div', { className: 'text-center bg-white rounded-2xl p-8 max-w-md' },
+        h('div', { className: 'text-6xl mb-4 animate-bounce' }, '📍'),
+        h('p', { className: 'text-gray-800 text-xl font-semibold mb-2' }, 'Onde Estou'),
+        h('p', { className: 'text-gray-600' }, 'Conectando à base compartilhada...')
+      )
+    );
+  }
+
+  // Login/Registro
+  if (!isLoggedIn) {
+    if (showRegister) {
+      return h(RegisterScreen, { handleRegister, setShowRegister, users });
+    }
+    return h(LoginScreen, { handleLogin, setShowRegister });
+  }
+
+  // App Principal
+  return h('div', { className: 'min-h-screen bg-gray-50' },
+    h(Header, { currentUser, getBirthdaysInMonth, setShowProfile }),
+    currentView === 'home' && h(HomeView, {
+      currentUser, getUserLocation, getBirthdaysForDate, events,
+      setShowCreateEvent, setShowAddLocation, users
+    }),
+    currentView === 'calendar' && h(CalendarView, {
+      selectedDate, setSelectedDate, getEventsForDate,
+      getBirthdaysForDate, currentUser, users, events
+    }),
+    currentView === 'people' && h(PeopleView, {
+      users, currentUser, getUserLocation
+    }),
+    h(Navigation, { currentView, setCurrentView }),
+    showCreateEvent && h(CreateEventModal, {
+      setShowCreateEvent, handleCreateEvent, categories, users, currentUser
+    }),
+    showAddLocation && h(AddLocationModal, {
+      setShowAddLocation, handleAddLocation
+    }),
+    showProfile && h(ProfileModal, {
+      currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser
+    }),
+    showParticipants && h(ParticipantsModal, {
+      currentEventParticipants, users, getUserLocation, setShowParticipants
+    })
+  );
+};
+
 // ========== COMPONENTES DA UI ==========
 
 // LoginScreen
@@ -705,4 +947,3 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
     )
   )
 );
-
