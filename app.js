@@ -16,9 +16,12 @@ const App = () => {
   const [locations, setLocations] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [showEditEvent, setShowEditEvent] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
   const [showAddLocation, setShowAddLocation] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [currentEventParticipants, setCurrentEventParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,6 +34,12 @@ const App = () => {
     'Indicadores',
     'Aniversáriantes do mês',
     'Outros'
+  ];
+
+  const statusOptions = [
+    'Em sala',
+    'Em Reunião',
+    'Visita na fazenda'
   ];
 
   // Funções Supabase
@@ -105,7 +114,8 @@ const App = () => {
       password: userData.password,
       birthDate: userData.birthDate,
       photo: '👤',
-      interests: ''
+      interests: '',
+      status: 'Em sala' // Status padrão
     };
     
     const updatedUsers = [...users, newUser];
@@ -124,6 +134,7 @@ const App = () => {
       ...eventData,
       creator: currentUser.id,
       participants: JSON.stringify([currentUser.id]),
+      confirmed: JSON.stringify([currentUser.id]), // Criador já confirmado
       visibleTo: JSON.stringify(eventData.visibleTo.length > 0 ? eventData.visibleTo : users.map(u => u.id))
     };
     
@@ -131,6 +142,49 @@ const App = () => {
     setEvents(updatedEvents);
     await saveData('events', updatedEvents);
     setShowCreateEvent(false);
+  };
+
+  const handleEditEvent = async (eventData) => {
+    const updatedEvents = events.map(e => 
+      e.id === editingEvent.id ? { ...e, ...eventData } : e
+    );
+    setEvents(updatedEvents);
+    await saveData('events', updatedEvents);
+    setShowEditEvent(false);
+    setEditingEvent(null);
+  };
+
+  const handleConfirmPresence = async (eventId) => {
+    const updatedEvents = events.map(e => {
+      if (e.id === eventId) {
+        const confirmed = typeof e.confirmed === 'string' ? JSON.parse(e.confirmed) : (e.confirmed || []);
+        const participants = typeof e.participants === 'string' ? JSON.parse(e.participants) : e.participants;
+        
+        if (!confirmed.includes(currentUser.id)) {
+          return {
+            ...e,
+            confirmed: JSON.stringify([...confirmed, currentUser.id]),
+            participants: participants.includes(currentUser.id) 
+              ? JSON.stringify(participants) 
+              : JSON.stringify([...participants, currentUser.id])
+          };
+        }
+      }
+      return e;
+    });
+    
+    setEvents(updatedEvents);
+    await saveData('events', updatedEvents);
+  };
+
+  const handleUpdateStatus = async (newStatus) => {
+    const updatedUser = { ...currentUser, status: newStatus };
+    const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+    
+    setCurrentUser(updatedUser);
+    setUsers(updatedUsers);
+    await saveData('users', updatedUsers);
+    setShowStatusModal(false);
   };
 
   const handleAddLocation = async (locationData) => {
@@ -158,6 +212,11 @@ const App = () => {
       }
     }
     return 'Localização não informada';
+  };
+
+  const getUserStatus = (userId) => {
+    const user = users.find(u => u.id == userId);
+    return user?.status || 'Em sala';
   };
 
   const getBirthdaysForDate = (date) => {
@@ -212,30 +271,38 @@ const App = () => {
 
   // App Principal
   return h('div', { className: 'min-h-screen bg-gray-50' },
-    h(Header, { currentUser, getBirthdaysInMonth, setShowProfile }),
+    h(Header, { currentUser, getBirthdaysInMonth, setShowProfile, setShowStatusModal, getUserStatus }),
     currentView === 'home' && h(HomeView, {
       currentUser, getUserLocation, getBirthdaysForDate, events,
-      setShowCreateEvent, setShowAddLocation, users
+      setShowCreateEvent, setShowAddLocation, users, handleConfirmPresence,
+      setEditingEvent, setShowEditEvent, getUserStatus
     }),
     currentView === 'calendar' && h(CalendarView, {
       selectedDate, setSelectedDate, getEventsForDate,
-      getBirthdaysForDate, currentUser, users, events
+      getBirthdaysForDate, currentUser, users, events, handleConfirmPresence,
+      setEditingEvent, setShowEditEvent, getUserStatus
     }),
     currentView === 'people' && h(PeopleView, {
-      users, currentUser, getUserLocation
+      users, currentUser, getUserLocation, getUserStatus
     }),
     h(Navigation, { currentView, setCurrentView }),
     showCreateEvent && h(CreateEventModal, {
       setShowCreateEvent, handleCreateEvent, categories, users, currentUser
     }),
+    showEditEvent && h(EditEventModal, {
+      setShowEditEvent, handleEditEvent, categories, users, currentUser, editingEvent
+    }),
     showAddLocation && h(AddLocationModal, {
       setShowAddLocation, handleAddLocation
     }),
     showProfile && h(ProfileModal, {
-      currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser
+      currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus
+    }),
+    showStatusModal && h(StatusModal, {
+      setShowStatusModal, handleUpdateStatus, statusOptions, currentUser
     }),
     showParticipants && h(ParticipantsModal, {
-      currentEventParticipants, users, getUserLocation, setShowParticipants
+      currentEventParticipants, users, getUserLocation, setShowParticipants, getUserStatus, events
     })
   );
 };
@@ -400,7 +467,14 @@ const RegisterScreen = ({ handleRegister, setShowRegister, users }) => {
 };
 
 // Header
-const Header = ({ currentUser, getBirthdaysInMonth, setShowProfile }) => {
+const Header = ({ currentUser, getBirthdaysInMonth, setShowProfile, setShowStatusModal, getUserStatus }) => {
+  const currentStatus = getUserStatus(currentUser.id);
+  const statusColors = {
+    'Em sala': 'bg-green-500',
+    'Em Reunião': 'bg-yellow-500',
+    'Visita na fazenda': 'bg-blue-500'
+  };
+
   return h('div', { className: 'bg-white shadow-sm border-b sticky top-0 z-10' },
     h('div', { className: 'max-w-6xl mx-auto px-4 py-4 flex items-center justify-between' },
       h('div', { className: 'flex items-center gap-2' },
@@ -408,6 +482,13 @@ const Header = ({ currentUser, getBirthdaysInMonth, setShowProfile }) => {
         h('h1', { className: 'text-xl font-bold text-gray-800' }, 'Onde Estou')
       ),
       h('div', { className: 'flex items-center gap-4' },
+        h('button', {
+          onClick: () => setShowStatusModal(true),
+          className: 'flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition'
+        },
+          h('div', { className: `w-3 h-3 rounded-full ${statusColors[currentStatus]}` }),
+          h('span', { className: 'text-sm font-medium text-gray-700' }, currentStatus)
+        ),
         h('button', { className: 'relative' },
           h(Bell, { className: 'text-gray-600', size: 24 }),
           h('span', {
@@ -416,6 +497,53 @@ const Header = ({ currentUser, getBirthdaysInMonth, setShowProfile }) => {
         ),
         h('button', { onClick: () => setShowProfile(true) },
           h('div', { className: 'text-2xl' }, currentUser?.photo)
+        )
+      )
+    )
+  );
+};
+
+// StatusModal
+const StatusModal = ({ setShowStatusModal, handleUpdateStatus, statusOptions, currentUser }) => {
+  return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50' },
+    h('div', { className: 'bg-white rounded-2xl max-w-md w-full' },
+      h('div', { className: 'p-6' },
+        h('div', { className: 'flex items-center justify-between mb-6' },
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Selecionar Status'),
+          h('button', { onClick: () => setShowStatusModal(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
+        ),
+        h('div', { className: 'space-y-3' },
+          ...statusOptions.map(status => {
+            const statusIcons = {
+              'Em sala': '🏢',
+              'Em Reunião': '👥',
+              'Visita na fazenda': '🚜'
+            };
+            const statusColors = {
+              'Em sala': 'bg-green-50 border-green-200 hover:bg-green-100',
+              'Em Reunião': 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100',
+              'Visita na fazenda': 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+            };
+
+            return h('button', {
+              key: status,
+              onClick: () => handleUpdateStatus(status),
+              className: `w-full p-4 border-2 rounded-lg transition ${statusColors[status]} flex items-center gap-3`
+            },
+              h('span', { className: 'text-3xl' }, statusIcons[status]),
+              h('div', { className: 'text-left flex-1' },
+                h('div', { className: 'font-semibold text-gray-800' }, status),
+                h('div', { className: 'text-sm text-gray-600' }, 
+                  status === 'Em sala' ? 'Disponível no escritório' :
+                  status === 'Em Reunião' ? 'Em reunião - não disponível' :
+                  'Visitando fazenda'
+                )
+              ),
+              currentUser.status === status && h('span', { className: 'text-green-600 text-xl' }, '✓')
+            );
+          })
         )
       )
     )
@@ -452,7 +580,7 @@ const Navigation = ({ currentView, setCurrentView }) => {
 };
 
 // HomeView
-const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, setShowCreateEvent, setShowAddLocation, users }) => {
+const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, setShowCreateEvent, setShowAddLocation, users, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus }) => {
   const userLocation = getUserLocation(currentUser.id);
   const todayBirthdays = getBirthdaysForDate(new Date());
   const upcomingEvents = events
@@ -502,24 +630,43 @@ const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, s
     ),
     h('div', { className: 'space-y-4' },
       upcomingEvents.length > 0 ? upcomingEvents.map(event =>
-        h(EventCard, { key: event.id, event, users, currentUser })
+        h(EventCard, { 
+          key: event.id, 
+          event, 
+          users, 
+          currentUser, 
+          handleConfirmPresence,
+          setEditingEvent,
+          setShowEditEvent,
+          getUserStatus
+        })
       ) : h('div', { className: 'text-center text-gray-500 py-8' }, 'Nenhum evento próximo')
     )
   );
 };
 
 // EventCard
-const EventCard = ({ event, users, currentUser }) => {
+const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus }) => {
   const creator = users.find(u => u.id == event.creator);
   const participants = typeof event.participants === 'string' ? JSON.parse(event.participants) : event.participants;
+  const confirmed = typeof event.confirmed === 'string' ? JSON.parse(event.confirmed) : (event.confirmed || []);
   const isParticipant = participants.includes(currentUser?.id);
+  const isConfirmed = confirmed.includes(currentUser?.id);
+  const isCreator = event.creator == currentUser?.id;
 
   return h('div', { className: 'bg-white rounded-xl shadow-sm border p-4 hover:shadow-md transition' },
     h('div', { className: 'flex items-start justify-between mb-3' },
       h('div', { className: 'flex-1' },
         h('h4', { className: 'font-bold text-gray-800 mb-1' }, event.title),
         h('span', { className: 'text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full' }, event.category)
-      )
+      ),
+      isCreator && h('button', {
+        onClick: () => {
+          setEditingEvent(event);
+          setShowEditEvent(true);
+        },
+        className: 'text-blue-600 hover:text-blue-700 text-sm font-medium'
+      }, '✏️ Editar')
     ),
     h('p', { className: 'text-gray-600 text-sm mb-3' }, event.description),
     h('div', { className: 'space-y-2 mb-3' },
@@ -533,7 +680,7 @@ const EventCard = ({ event, users, currentUser }) => {
       ),
       h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
         h(Users, { size: 16 }),
-        h('span', null, `${participants.length} participantes`)
+        h('span', null, `${confirmed.length} confirmados / ${participants.length} participantes`)
       )
     ),
     h('div', { className: 'flex items-center gap-2 mb-3' },
@@ -541,17 +688,152 @@ const EventCard = ({ event, users, currentUser }) => {
       h('span', { className: 'text-sm text-gray-600' }, `Criado por ${creator?.name || 'Usuário'}`)
     ),
     h('button', {
+      onClick: () => handleConfirmPresence(event.id),
+      disabled: isConfirmed,
       className: `w-full py-2 rounded-lg font-semibold transition ${
-        isParticipant
+        isConfirmed
           ? 'bg-green-100 text-green-700'
           : 'bg-purple-600 text-white hover:bg-purple-700'
       }`
-    }, isParticipant ? '✓ Participando' : 'Participar')
+    }, isConfirmed ? '✓ Presença Confirmada' : '📋 Confirmar Presença')
+  );
+};
+
+// EditEventModal
+const EditEventModal = ({ setShowEditEvent, handleEditEvent, categories, users, currentUser, editingEvent }) => {
+  const [formData, setFormData] = useState({
+    title: editingEvent?.title || '',
+    description: editingEvent?.description || '',
+    date: editingEvent?.date || '',
+    time: editingEvent?.time || '',
+    location: editingEvent?.location || '',
+    category: editingEvent?.category || 'Outros',
+    customCategory: '',
+    visibleTo: typeof editingEvent?.visibleTo === 'string' ? JSON.parse(editingEvent.visibleTo) : (editingEvent?.visibleTo || [])
+  });
+
+  const onSubmit = () => {
+    if (!formData.title || !formData.description || !formData.date || !formData.time || !formData.location) {
+      alert('Por favor, preencha todos os campos obrigatórios');
+      return;
+    }
+    
+    if (formData.category === 'Outros' && !formData.customCategory) {
+      alert('Por favor, digite o nome da categoria');
+      return;
+    }
+    
+    const finalCategory = formData.category === 'Outros' ? formData.customCategory : formData.category;
+    handleEditEvent({
+      ...formData,
+      category: finalCategory,
+      visibleTo: JSON.stringify(formData.visibleTo.length > 0 ? formData.visibleTo : users.map(u => u.id))
+    });
+  };
+
+  const toggleUser = (userId) => {
+    setFormData(prev => ({
+      ...prev,
+      visibleTo: prev.visibleTo.includes(userId)
+        ? prev.visibleTo.filter(id => id !== userId)
+        : [...prev.visibleTo, userId]
+    }));
+  };
+
+  return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto' },
+    h('div', { className: 'bg-white rounded-2xl max-w-md w-full my-8' },
+      h('div', { className: 'p-6' },
+        h('div', { className: 'flex items-center justify-between mb-6' },
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Editar Evento'),
+          h('button', { onClick: () => setShowEditEvent(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
+        ),
+        h('div', { className: 'space-y-4' },
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título'),
+            h('input', {
+              type: 'text',
+              value: formData.title,
+              onChange: (e) => setFormData({...formData, title: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Nome do evento'
+            })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'),
+            h('textarea', {
+              value: formData.description,
+              onChange: (e) => setFormData({...formData, description: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              rows: 3,
+              placeholder: 'Descreva seu evento'
+            })
+          ),
+          h('div', { className: 'grid grid-cols-2 gap-4' },
+            h('div', null,
+              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data'),
+              h('input', {
+                type: 'date',
+                value: formData.date,
+                onChange: (e) => setFormData({...formData, date: e.target.value}),
+                className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              })
+            ),
+            h('div', null,
+              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Hora'),
+              h('input', {
+                type: 'time',
+                value: formData.time,
+                onChange: (e) => setFormData({...formData, time: e.target.value}),
+                className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              })
+            )
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Local'),
+            h('input', {
+              type: 'text',
+              value: formData.location,
+              onChange: (e) => setFormData({...formData, location: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Digite o local do evento'
+            })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Categoria'),
+            h('select', {
+              value: formData.category,
+              onChange: (e) => setFormData({...formData, category: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+            },
+              ...categories.map(cat =>
+                h('option', { key: cat, value: cat }, cat)
+              )
+            )
+          ),
+          formData.category === 'Outros' && h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Digite a categoria'),
+            h('input', {
+              type: 'text',
+              value: formData.customCategory,
+              onChange: (e) => setFormData({...formData, customCategory: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Nome da categoria'
+            })
+          ),
+          h('button', {
+            onClick: onSubmit,
+            className: 'w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition'
+          }, 'Salvar Alterações')
+        )
+      )
+    )
   );
 };
 
 // CalendarView
-const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirthdaysForDate, currentUser, users, events }) => {
+const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirthdaysForDate, currentUser, users, events, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
   const getDaysInMonth = (date) => {
@@ -650,19 +932,34 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
         )
       ),
       eventsForSelectedDate.length > 0 ? eventsForSelectedDate.map(event =>
-        h(EventCard, { key: event.id, event, users, currentUser })
+        h(EventCard, { 
+          key: event.id, 
+          event, 
+          users, 
+          currentUser,
+          handleConfirmPresence,
+          setEditingEvent,
+          setShowEditEvent,
+          getUserStatus
+        })
       ) : h('div', { className: 'text-center text-gray-500 py-8' }, 'Nenhum evento nesta data')
     )
   );
 };
 
 // PeopleView
-const PeopleView = ({ users, currentUser, getUserLocation }) => {
+const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const filteredUsers = users.filter(u => 
     u.id !== currentUser.id &&
     u.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const statusColors = {
+    'Em sala': 'bg-green-500',
+    'Em Reunião': 'bg-yellow-500',
+    'Visita na fazenda': 'bg-blue-500'
+  };
 
   return h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24' },
     h('div', { className: 'mb-6' },
@@ -678,8 +975,9 @@ const PeopleView = ({ users, currentUser, getUserLocation }) => {
       )
     ),
     h('div', { className: 'space-y-4' },
-      ...filteredUsers.map(user =>
-        h('div', { key: user.id, className: 'bg-white rounded-xl shadow-sm border p-4' },
+      ...filteredUsers.map(user => {
+        const userStatus = getUserStatus(user.id);
+        return h('div', { key: user.id, className: 'bg-white rounded-xl shadow-sm border p-4' },
           h('div', { className: 'flex items-center gap-3' },
             h('div', { className: 'text-4xl' }, user.photo),
             h('div', { className: 'flex-1' },
@@ -687,16 +985,20 @@ const PeopleView = ({ users, currentUser, getUserLocation }) => {
               h('p', { className: 'text-sm text-gray-500 flex items-center gap-1' },
                 h(MapPin, { size: 14 }),
                 getUserLocation(user.id)
+              ),
+              h('div', { className: 'flex items-center gap-2 mt-1' },
+                h('div', { className: `w-2 h-2 rounded-full ${statusColors[userStatus]}` }),
+                h('span', { className: 'text-xs text-gray-600' }, userStatus)
               )
             )
           )
-        )
-      )
+        );
+      })
     )
   );
 };
 
-// CreateEventModal
+// CreateEventModal (continua igual, sem alterações necessárias para novas funcionalidades)
 const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, users, currentUser }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -815,7 +1117,7 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
               type: 'text',
               value: formData.customCategory,
               onChange: (e) => setFormData({...formData, customCategory: e.target.value}),
-              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              className: 'w-full px-4 py-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
               placeholder: 'Nome da categoria'
             })
           ),
@@ -935,7 +1237,14 @@ const AddLocationModal = ({ setShowAddLocation, handleAddLocation }) => {
 };
 
 // ProfileModal
-const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser }) => {
+const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus }) => {
+  const statusColors = {
+    'Em sala': 'bg-green-500',
+    'Em Reunião': 'bg-yellow-500',
+    'Visita na fazenda': 'bg-blue-500'
+  };
+  const currentStatus = getUserStatus(currentUser.id);
+
   return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50' },
     h('div', { className: 'bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto' },
       h('div', { className: 'p-6' },
@@ -961,6 +1270,13 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
             ),
             h('p', { className: 'text-gray-700' }, getUserLocation(currentUser.id))
           ),
+          h('div', { className: 'bg-gray-50 rounded-lg p-4' },
+            h('h4', { className: 'font-medium mb-2' }, 'Status Atual'),
+            h('div', { className: 'flex items-center gap-2' },
+              h('div', { className: `w-3 h-3 rounded-full ${statusColors[currentStatus]}` }),
+              h('span', { className: 'text-gray-700' }, currentStatus)
+            )
+          ),
           h('button', {
             onClick: () => {
               setIsLoggedIn(false);
@@ -976,8 +1292,13 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
 };
 
 // ParticipantsModal
-const ParticipantsModal = ({ currentEventParticipants, users, getUserLocation, setShowParticipants }) => {
+const ParticipantsModal = ({ currentEventParticipants, users, getUserLocation, setShowParticipants, getUserStatus, events }) => {
   const participants = users.filter(u => currentEventParticipants.includes(u.id));
+  const statusColors = {
+    'Em sala': 'bg-green-500',
+    'Em Reunião': 'bg-yellow-500',
+    'Visita na fazenda': 'bg-blue-500'
+  };
 
   return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50' },
     h('div', { className: 'bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto' },
@@ -989,18 +1310,23 @@ const ParticipantsModal = ({ currentEventParticipants, users, getUserLocation, s
           )
         ),
         h('div', { className: 'space-y-3' },
-          ...participants.map(user =>
-            h('div', { key: user.id, className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg' },
+          ...participants.map(user => {
+            const userStatus = getUserStatus(user.id);
+            return h('div', { key: user.id, className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg' },
               h('div', { className: 'text-3xl' }, user.photo),
               h('div', { className: 'flex-1' },
                 h('h4', { className: 'font-semibold text-gray-800' }, user.name),
                 h('p', { className: 'text-sm text-gray-500 flex items-center gap-1' },
                   h(MapPin, { size: 14 }),
                   getUserLocation(user.id)
+                ),
+                h('div', { className: 'flex items-center gap-2 mt-1' },
+                  h('div', { className: `w-2 h-2 rounded-full ${statusColors[userStatus]}` }),
+                  h('span', { className: 'text-xs text-gray-600' }, userStatus)
                 )
               )
-            )
-          )
+            );
+          })
         )
       )
     )
