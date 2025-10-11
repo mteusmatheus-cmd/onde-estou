@@ -1,6 +1,6 @@
 // ⚙️ CONFIGURAÇÃO SUPABASE
-const SUPABASE_URL = https://ikczlcmcbrlhdlopkoqg.supabase.co;
-const SUPABASE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3psY21jYnJsaGRsb3Brb3FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMjAxMTYsImV4cCI6MjA3NTY5NjExNn0.GxxdTvkzMwOMY6yO8HareaB4OC2ibVNTC_63EBjrDZc;
+const SUPABASE_URL = 'https://ikczlcmcbrlhdlopkoqg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3psY21jYnJsaGRsb3Brb3FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMjAxMTYsImV4cCI6MjA3NTY5NjExNn0.GxxdTvkzMwOMY6yO8HareaB4OC2ibVNTC_63EBjrDZc';
 
 const { useState, useEffect, createElement: h } = React;
 const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake } = window.Icons;
@@ -240,6 +240,7 @@ const App = () => {
   );
 };
 
+// Componentes da UI (continua no próximo arquivo...)
 // ========== COMPONENTES DA UI ==========
 
 // LoginScreen
@@ -550,60 +551,11 @@ const EventCard = ({ event, users, currentUser }) => {
   );
 };
 
-// ========== PARTE 3: COMPONENTES FINAIS ==========
-
-// Atualiza EventCard para conseguir abrir modal de participantes
-const EventCard = ({ event, users, currentUser, setCurrentEventParticipants, setShowParticipants, onToggleParticipation }) => {
-  const creator = users.find(u => u.id == event.creator);
-  const participants = typeof event.participants === 'string' ? JSON.parse(event.participants) : event.participants || [];
-  const isParticipant = participants.includes(currentUser?.id);
-
-  return h('div', { className: 'bg-white rounded-xl shadow-sm border p-4 hover:shadow-md transition' },
-    h('div', { className: 'flex items-start justify-between mb-3' },
-      h('div', { className: 'flex-1' },
-        h('h4', { className: 'font-bold text-gray-800 mb-1' }, event.title),
-        h('span', { className: 'text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full' }, event.category)
-      )
-    ),
-    h('p', { className: 'text-gray-600 text-sm mb-3' }, event.description),
-    h('div', { className: 'space-y-2 mb-3' },
-      h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
-        h(Calendar, { size: 16 }),
-        h('span', null, `${new Date(event.date).toLocaleDateString('pt-BR')} às ${event.time}`)
-      ),
-      h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
-        h(MapPin, { size: 16 }),
-        h('span', null, event.location)
-      ),
-      h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
-        h(Users, { size: 16 }),
-        h('span', null, `${participants.length} participante(s)`)
-      )
-    ),
-    h('div', { className: 'flex items-center gap-2 mb-3' },
-      h('div', { className: 'text-xl' }, creator?.photo || '👤'),
-      h('span', { className: 'text-sm text-gray-600' }, `Criado por ${creator?.name || 'Usuário'}`)
-    ),
-    h('div', { className: 'flex gap-2' },
-      h('button', {
-        onClick: () => {
-          setCurrentEventParticipants(participants);
-          setShowParticipants(true);
-        },
-        className: 'flex-1 py-2 rounded-lg font-semibold border border-gray-200 hover:bg-gray-50 transition'
-      }, 'Ver Participantes'),
-      h('button', {
-        onClick: () => onToggleParticipation && onToggleParticipation(event.id, isParticipant),
-        className: `flex-1 py-2 rounded-lg font-semibold transition ${isParticipant ? 'bg-green-100 text-green-700' : 'bg-purple-600 text-white hover:bg-purple-700'}`
-      }, isParticipant ? '✓ Participando' : 'Participar')
-    )
-  );
-};
-
-// CalendarView (substitui/cole no lugar)
-const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirthdaysForDate, currentUser, users, events, setCurrentEventParticipants, setShowParticipants, onToggleParticipation }) => {
+// (Continua na próxima parte...)
+// CalendarView
+const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirthdaysForDate, currentUser, users, events }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-
+  
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -611,36 +563,48 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
-
+    
     const days = [];
-    for (let i = 0; i < startingDayOfWeek; i++) days.push(null);
-    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(new Date(year, month, i));
+    }
     return days;
   };
 
   const days = getDaysInMonth(currentMonth);
-  const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
-  const changeMonth = (delta) => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + delta, 1));
-
+  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const eventsForSelectedDate = getEventsForDate(selectedDate);
   const birthdaysForSelectedDate = getBirthdaysForDate(selectedDate);
 
   return h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24' },
     h('div', { className: 'bg-white rounded-xl shadow-sm border p-4 mb-6' },
       h('div', { className: 'flex items-center justify-between mb-4' },
-        h('button', { onClick: () => changeMonth(-1), className: 'px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200' }, '←'),
-        h('h2', { className: 'text-xl font-bold text-gray-800' }, `${monthNames[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`),
-        h('button', { onClick: () => changeMonth(1), className: 'px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200' }, '→')
+        h('button', {
+          onClick: () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)),
+          className: 'px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200'
+        }, '←'),
+        h('h2', { className: 'text-xl font-bold text-gray-800' },
+          `${monthNames[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`
+        ),
+        h('button', {
+          onClick: () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)),
+          className: 'px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200'
+        }, '→')
       ),
-
       h('div', { className: 'grid grid-cols-7 gap-2 mb-2' },
-        ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(day => h('div', { key: day, className: 'text-center text-sm font-semibold text-gray-600 py-2' }, day))
+        ...['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day =>
+          h('div', { key: day, className: 'text-center text-sm font-semibold text-gray-600 py-2' }, day)
+        )
       ),
-
       h('div', { className: 'grid grid-cols-7 gap-2' },
-        days.map((day, index) => {
-          if (!day) return h('div', { key: index, className: 'aspect-square' });
+        ...days.map((day, index) => {
+          if (!day) {
+            return h('div', { key: index, className: 'aspect-square' });
+          }
+
           const hasEvents = getEventsForDate(day).length > 0;
           const hasBirthdays = getBirthdaysForDate(day).length > 0;
           const isSelected = selectedDate.toDateString() === day.toDateString();
@@ -649,7 +613,13 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
           return h('button', {
             key: index,
             onClick: () => setSelectedDate(day),
-            className: `aspect-square rounded-lg p-2 text-sm relative ${isSelected ? 'bg-purple-600 text-white' : isToday ? 'bg-blue-100 text-blue-700 font-bold' : 'bg-gray-50 hover:bg-gray-100'}`
+            className: `aspect-square rounded-lg p-2 text-sm relative ${
+              isSelected
+                ? 'bg-purple-600 text-white'
+                : isToday
+                ? 'bg-blue-100 text-blue-700 font-bold'
+                : 'bg-gray-50 hover:bg-gray-100'
+            }`
           },
             h('div', { className: 'font-medium' }, day.getDate()),
             h('div', { className: 'flex gap-1 justify-center mt-1' },
@@ -660,27 +630,29 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
         })
       )
     ),
-
     h('div', { className: 'space-y-4' },
-      h('h3', { className: 'text-lg font-bold text-gray-800' }, selectedDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })),
-
+      h('h3', { className: 'text-lg font-bold text-gray-800' },
+        selectedDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+      ),
       birthdaysForSelectedDate.length > 0 && h('div', { className: 'bg-pink-50 border border-pink-200 rounded-xl p-4' },
         h('h4', { className: 'font-bold text-pink-800 mb-3 flex items-center gap-2' },
-          h(Cake, { size: 20 }), 'Aniversariantes do Dia'
+          h(Cake, { size: 20 }),
+          'Aniversariantes do Dia'
         ),
         ...birthdaysForSelectedDate.map(user =>
           h('div', { key: user.id, className: 'flex items-center gap-3 mb-2' },
             h('div', { className: 'text-2xl' }, user.photo),
             h('div', null,
               h('div', { className: 'font-medium' }, user.name),
-              h('div', { className: 'text-sm text-gray-600' }, `${new Date().getFullYear() - parseInt(user.birthDate.split('-')[0])} anos`)
+              h('div', { className: 'text-sm text-gray-600' },
+                `${new Date().getFullYear() - parseInt(user.birthDate.split('-')[0])} anos`
+              )
             )
           )
         )
       ),
-
-      eventsForSelectedDate.length > 0 ? eventsForSelectedDate.map(ev =>
-        h(EventCard, { key: ev.id, event: ev, users, currentUser, setCurrentEventParticipants, setShowParticipants, onToggleParticipation })
+      eventsForSelectedDate.length > 0 ? eventsForSelectedDate.map(event =>
+        h(EventCard, { key: event.id, event, users, currentUser })
       ) : h('div', { className: 'text-center text-gray-500 py-8' }, 'Nenhum evento nesta data')
     )
   );
@@ -689,8 +661,9 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
 // PeopleView
 const PeopleView = ({ users, currentUser, getUserLocation }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const filteredUsers = users.filter(u =>
-    u.id !== currentUser.id && u.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(u => 
+    u.id !== currentUser.id &&
+    u.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24' },
@@ -706,9 +679,8 @@ const PeopleView = ({ users, currentUser, getUserLocation }) => {
         })
       )
     ),
-
     h('div', { className: 'space-y-4' },
-      filteredUsers.map(user =>
+      ...filteredUsers.map(user =>
         h('div', { key: user.id, className: 'bg-white rounded-xl shadow-sm border p-4' },
           h('div', { className: 'flex items-center gap-3' },
             h('div', { className: 'text-4xl' }, user.photo),
@@ -739,23 +711,17 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
     visibleTo: []
   });
 
-  const toggleUser = (userId) => {
-    setFormData(prev => ({
-      ...prev,
-      visibleTo: prev.visibleTo.includes(userId) ? prev.visibleTo.filter(id => id !== userId) : [...prev.visibleTo, userId]
-    }));
-  };
-
-  const handleSubmit = () => {
+  const onSubmit = () => {
     if (!formData.title || !formData.description || !formData.date || !formData.time || !formData.location) {
       alert('Por favor, preencha todos os campos obrigatórios');
       return;
     }
+    
     if (formData.category === 'Outros' && !formData.customCategory) {
       alert('Por favor, digite o nome da categoria');
       return;
     }
-
+    
     const finalCategory = formData.category === 'Outros' ? formData.customCategory : formData.category;
     handleCreateEvent({
       ...formData,
@@ -764,69 +730,124 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
     });
   };
 
+  const toggleUser = (userId) => {
+    setFormData(prev => ({
+      ...prev,
+      visibleTo: prev.visibleTo.includes(userId)
+        ? prev.visibleTo.filter(id => id !== userId)
+        : [...prev.visibleTo, userId]
+    }));
+  };
+
   return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto' },
     h('div', { className: 'bg-white rounded-2xl max-w-md w-full my-8' },
       h('div', { className: 'p-6' },
         h('div', { className: 'flex items-center justify-between mb-6' },
           h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Criar Evento'),
-          h('button', { onClick: () => setShowCreateEvent(false) }, h(X, { className: 'text-gray-500', size: 24 }))
+          h('button', { onClick: () => setShowCreateEvent(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
         ),
-
         h('div', { className: 'space-y-4' },
-          // título / descrição / data/hora / local / categoria / visibilidade
           h('div', null,
             h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título'),
-            h('input', { type: 'text', value: formData.title, onChange: (e) => setFormData({...formData, title: e.target.value}), className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500', placeholder: 'Nome do evento' })
+            h('input', {
+              type: 'text',
+              value: formData.title,
+              onChange: (e) => setFormData({...formData, title: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Nome do evento'
+            })
           ),
-
           h('div', null,
             h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'),
-            h('textarea', { value: formData.description, onChange: (e) => setFormData({...formData, description: e.target.value}), className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500', rows: 3, placeholder: 'Descreva seu evento' })
+            h('textarea', {
+              value: formData.description,
+              onChange: (e) => setFormData({...formData, description: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              rows: 3,
+              placeholder: 'Descreva seu evento'
+            })
           ),
-
           h('div', { className: 'grid grid-cols-2 gap-4' },
             h('div', null,
               h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data'),
-              h('input', { type: 'date', value: formData.date, onChange: (e) => setFormData({...formData, date: e.target.value}), className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500' })
+              h('input', {
+                type: 'date',
+                value: formData.date,
+                onChange: (e) => setFormData({...formData, date: e.target.value}),
+                className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              })
             ),
             h('div', null,
               h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Hora'),
-              h('input', { type: 'time', value: formData.time, onChange: (e) => setFormData({...formData, time: e.target.value}), className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500' })
+              h('input', {
+                type: 'time',
+                value: formData.time,
+                onChange: (e) => setFormData({...formData, time: e.target.value}),
+                className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              })
             )
           ),
-
           h('div', null,
             h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Local'),
-            h('input', { type: 'text', value: formData.location, onChange: (e) => setFormData({...formData, location: e.target.value}), className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500', placeholder: 'Digite o local do evento' })
+            h('input', {
+              type: 'text',
+              value: formData.location,
+              onChange: (e) => setFormData({...formData, location: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Digite o local do evento'
+            })
           ),
-
           h('div', null,
             h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Categoria'),
-            h('select', { value: formData.category, onChange: (e) => setFormData({...formData, category: e.target.value}), className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500' },
-              categories.map(cat => h('option', { key: cat, value: cat }, cat))
+            h('select', {
+              value: formData.category,
+              onChange: (e) => setFormData({...formData, category: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+            },
+              ...categories.map(cat =>
+                h('option', { key: cat, value: cat }, cat)
+              )
             )
           ),
-
           formData.category === 'Outros' && h('div', null,
             h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Digite a categoria'),
-            h('input', { type: 'text', value: formData.customCategory, onChange: (e) => setFormData({...formData, customCategory: e.target.value}), className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500', placeholder: 'Nome da categoria' })
+            h('input', {
+              type: 'text',
+              value: formData.customCategory,
+              onChange: (e) => setFormData({...formData, customCategory: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Nome da categoria'
+            })
           ),
-
           h('div', null,
             h('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Quem pode ver este evento?'),
             h('div', { className: 'border border-gray-300 rounded-lg max-h-48 overflow-y-auto' },
-              users.filter(u => u.id !== currentUser.id).map(user =>
-                h('label', { key: user.id, className: 'flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0' },
-                  h('input', { type: 'checkbox', checked: formData.visibleTo.includes(user.id), onChange: () => toggleUser(user.id), className: 'w-4 h-4 text-purple-600 rounded focus:ring-purple-500' }),
+              ...users.filter(u => u.id !== currentUser.id).map(user =>
+                h('label', {
+                  key: user.id,
+                  className: 'flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0'
+                },
+                  h('input', {
+                    type: 'checkbox',
+                    checked: formData.visibleTo.includes(user.id),
+                    onChange: () => toggleUser(user.id),
+                    className: 'w-4 h-4 text-purple-600 rounded focus:ring-purple-500'
+                  }),
                   h('div', { className: 'text-xl' }, user.photo),
                   h('span', { className: 'text-sm' }, user.name)
                 )
               )
             ),
-            h('p', { className: 'text-xs text-gray-500 mt-2' }, formData.visibleTo.length === 0 ? 'Todos poderão ver' : `${formData.visibleTo.length} pessoa(s) selecionada(s)`)
+            h('p', { className: 'text-xs text-gray-500 mt-2' },
+              formData.visibleTo.length === 0 ? 'Todos poderão ver' : `${formData.visibleTo.length} pessoa(s) selecionada(s)`
+            )
           ),
-
-          h('button', { onClick: handleSubmit, className: 'w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition' }, 'Criar Evento')
+          h('button', {
+            onClick: onSubmit,
+            className: 'w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition'
+          }, 'Criar Evento')
         )
       )
     )
@@ -843,7 +864,7 @@ const AddLocationModal = ({ setShowAddLocation, handleAddLocation }) => {
     endTime: ''
   });
 
-  const handleSubmit = () => {
+  const onSubmit = () => {
     if (!formData.location || !formData.startDate || !formData.startTime || !formData.endDate || !formData.endTime) {
       alert('Por favor, preencha todos os campos');
       return;
@@ -856,28 +877,100 @@ const AddLocationModal = ({ setShowAddLocation, handleAddLocation }) => {
       h('div', { className: 'p-6' },
         h('div', { className: 'flex items-center justify-between mb-6' },
           h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Atualizar Localização'),
-          h('button', { onClick: () => setShowAddLocation(false) }, h(X, { className: 'text-gray-500', size: 24 }))
+          h('button', { onClick: () => setShowAddLocation(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
         ),
         h('div', { className: 'space-y-4' },
           h('div', null,
             h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Onde você está?'),
-            h('input', { type: 'text', value: formData.location, onChange: (e) => setFormData({...formData, location: e.target.value}), className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500', placeholder: 'Ex: Escritório - Sala 304, Home Office, etc' })
+            h('input', {
+              type: 'text',
+              value: formData.location,
+              onChange: (e) => setFormData({...formData, location: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Ex: Escritório - Sala 304, Home Office, etc'
+            })
           ),
           h('div', null,
             h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Início'),
             h('div', { className: 'grid grid-cols-2 gap-2' },
-              h('input', { type: 'date', value: formData.startDate, onChange: (e) => setFormData({...formData, startDate: e.target.value}), className: 'px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500' }),
-              h('input', { type: 'time', value: formData.startTime, onChange: (e) => setFormData({...formData, startTime: e.target.value}), className: 'px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500' })
+              h('input', {
+                type: 'date',
+                value: formData.startDate,
+                onChange: (e) => setFormData({...formData, startDate: e.target.value}),
+                className: 'px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              }),
+              h('input', {
+                type: 'time',
+                value: formData.startTime,
+                onChange: (e) => setFormData({...formData, startTime: e.target.value}),
+                className: 'px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              })
             )
           ),
           h('div', null,
             h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Fim'),
             h('div', { className: 'grid grid-cols-2 gap-2' },
-              h('input', { type: 'date', value: formData.endDate, onChange: (e) => setFormData({...formData, endDate: e.target.value}), className: 'px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500' }),
-              h('input', { type: 'time', value: formData.endTime, onChange: (e) => setFormData({...formData, endTime: e.target.value}), className: 'px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500' })
+              h('input', {
+                type: 'date',
+                value: formData.endDate,
+                onChange: (e) => setFormData({...formData, endDate: e.target.value}),
+                className: 'px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              }),
+              h('input', {
+                type: 'time',
+                value: formData.endTime,
+                onChange: (e) => setFormData({...formData, endTime: e.target.value}),
+                className: 'px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              })
             )
           ),
-          h('button', { onClick: handleSubmit, className: 'w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition' }, 'Salvar Localização')
+          h('button', {
+            onClick: onSubmit,
+            className: 'w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition'
+          }, 'Salvar Localização')
+        )
+      )
+    )
+  );
+};
+
+// ProfileModal
+const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser }) => {
+  return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50' },
+    h('div', { className: 'bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto' },
+      h('div', { className: 'p-6' },
+        h('div', { className: 'flex items-center justify-between mb-6' },
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Perfil'),
+          h('button', { onClick: () => setShowProfile(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
+        ),
+        h('div', { className: 'text-center mb-6' },
+          h('div', { className: 'text-6xl mb-2' }, currentUser?.photo),
+          h('h3', { className: 'text-xl font-bold text-gray-800' }, currentUser?.name),
+          h('p', { className: 'text-gray-600' }, currentUser?.email),
+          currentUser?.birthDate && h('p', { className: 'text-sm text-gray-500 mt-1' },
+            `Aniversário: ${currentUser.birthDate.split('-').reverse().join('/')}`
+          )
+        ),
+        h('div', { className: 'space-y-4' },
+          h('div', { className: 'bg-gray-50 rounded-lg p-4' },
+            h('h4', { className: 'font-medium mb-2 flex items-center gap-2' },
+              h(MapPin, { size: 20, className: 'text-purple-600' }),
+              'Localização Atual'
+            ),
+            h('p', { className: 'text-gray-700' }, getUserLocation(currentUser.id))
+          ),
+          h('button', {
+            onClick: () => {
+              setIsLoggedIn(false);
+              setCurrentUser(null);
+              setShowProfile(false);
+            },
+            className: 'w-full bg-red-100 text-red-600 py-3 rounded-lg font-semibold hover:bg-red-200 transition'
+          }, 'Sair da Conta')
         )
       )
     )
@@ -893,10 +986,12 @@ const ParticipantsModal = ({ currentEventParticipants, users, getUserLocation, s
       h('div', { className: 'p-6' },
         h('div', { className: 'flex items-center justify-between mb-6' },
           h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Participantes'),
-          h('button', { onClick: () => setShowParticipants(false) }, h(X, { className: 'text-gray-500', size: 24 }))
+          h('button', { onClick: () => setShowParticipants(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
         ),
         h('div', { className: 'space-y-3' },
-          participants.map(user =>
+          ...participants.map(user =>
             h('div', { key: user.id, className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg' },
               h('div', { className: 'text-3xl' }, user.photo),
               h('div', { className: 'flex-1' },
@@ -914,36 +1009,6 @@ const ParticipantsModal = ({ currentEventParticipants, users, getUserLocation, s
   );
 };
 
-// ProfileModal
-const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser }) => (
-  h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50' },
-    h('div', { className: 'bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto' },
-      h('div', { className: 'p-6' },
-        h('div', { className: 'flex items-center justify-between mb-6' },
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Perfil'),
-          h('button', { onClick: () => setShowProfile(false) }, h(X, { className: 'text-gray-500', size: 24 }))
-        ),
-        h('div', { className: 'text-center mb-6' },
-          h('div', { className: 'text-6xl mb-2' }, currentUser?.photo),
-          h('h3', { className: 'text-xl font-bold text-gray-800' }, currentUser?.name),
-          h('p', { className: 'text-gray-600' }, currentUser?.email),
-          currentUser?.birthDate && h('p', { className: 'text-sm text-gray-500 mt-1' }, `Aniversário: ${currentUser.birthDate.split('-').reverse().join('/')}`)
-        ),
-        h('div', { className: 'space-y-4' },
-          h('div', { className: 'bg-gray-50 rounded-lg p-4' },
-            h('h4', { className: 'font-medium mb-2 flex items-center gap-2' }, h(MapPin, { size: 20, className: 'text-purple-600' }), 'Localização Atual'),
-            h('p', { className: 'text-gray-700' }, getUserLocation(currentUser.id))
-          ),
-          h('button', {
-            onClick: () => {
-              setIsLoggedIn(false);
-              setCurrentUser(null);
-              setShowProfile(false);
-            },
-            className: 'w-full bg-red-100 text-red-600 py-3 rounded-lg font-semibold hover:bg-red-200 transition'
-          }, 'Sair da Conta')
-        )
-      )
-    )
-  )
-);
+// Renderiza o App
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
