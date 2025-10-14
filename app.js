@@ -1200,4 +1200,139 @@ const EditEventModal = ({ setShowEditEvent, handleEditEvent, categories, users, 
                 value: formData.date,
                 onChange: (e) => setFormData({...formData, date: e.target.value}),
                 className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              }),
+              h('input', {
+                type: 'time',
+                value: formData.startTime,
+                onChange: (e) => setFormData({...formData, startTime: e.target.value}),
+                className: 'px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
               })
+            )
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Fim'),
+            h('div', { className: 'grid grid-cols-2 gap-2' },
+              h('input', {
+                type: 'date',
+                value: formData.endDate,
+                onChange: (e) => setFormData({...formData, endDate: e.target.value}),
+                className: 'px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              }),
+              h('input', {
+                type: 'time',
+                value: formData.endTime,
+                onChange: (e) => setFormData({...formData, endTime: e.target.value}),
+                className: 'px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              })
+            )
+          ),
+          h('button', {
+            onClick: onSubmit,
+            className: 'w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition'
+          }, 'Salvar Localização')
+        )
+      )
+    )
+  );
+};
+
+// ProfileModal
+const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus }) => {
+  const statusColors = {
+    'Em sala': 'bg-green-500',
+    'Em Reunião': 'bg-yellow-500',
+    'Visita na fazenda': 'bg-blue-500'
+  };
+  const currentStatus = getUserStatus(currentUser.id);
+
+  return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50' },
+    h('div', { className: 'bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto' },
+      h('div', { className: 'p-6' },
+        h('div', { className: 'flex items-center justify-between mb-6' },
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Perfil'),
+          h('button', { onClick: () => setShowProfile(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
+        ),
+        h('div', { className: 'text-center mb-6' },
+          h('div', { className: 'text-6xl mb-2' }, currentUser?.photo),
+          h('h3', { className: 'text-xl font-bold text-gray-800' }, currentUser?.name),
+          h('p', { className: 'text-gray-600' }, currentUser?.email),
+          currentUser?.birthDate && h('p', { className: 'text-sm text-gray-500 mt-1' },
+            `Aniversário: ${currentUser.birthDate.split('-').reverse().join('/')}`
+          )
+        ),
+        h('div', { className: 'space-y-4' },
+          h('div', { className: 'bg-gray-50 rounded-lg p-4' },
+            h('h4', { className: 'font-medium mb-2 flex items-center gap-2' },
+              h(MapPin, { size: 20, className: 'text-purple-600' }),
+              'Localização Atual'
+            ),
+            h('p', { className: 'text-gray-700' }, getUserLocation(currentUser.id))
+          ),
+          h('div', { className: 'bg-gray-50 rounded-lg p-4' },
+            h('h4', { className: 'font-medium mb-2' }, 'Status Atual'),
+            h('div', { className: 'flex items-center gap-2' },
+              h('div', { className: `w-3 h-3 rounded-full ${statusColors[currentStatus]}` }),
+              h('span', { className: 'text-gray-700' }, currentStatus)
+            )
+          ),
+          h('button', {
+            onClick: () => {
+              setIsLoggedIn(false);
+              setCurrentUser(null);
+              setShowProfile(false);
+            },
+            className: 'w-full bg-red-100 text-red-600 py-3 rounded-lg font-semibold hover:bg-red-200 transition'
+          }, 'Sair da Conta')
+        )
+      )
+    )
+  );
+};
+
+// ParticipantsModal
+const ParticipantsModal = ({ currentEventParticipants, users, getUserLocation, setShowParticipants, getUserStatus, events }) => {
+  const participants = users.filter(u => currentEventParticipants.includes(u.id));
+  const statusColors = {
+    'Em sala': 'bg-green-500',
+    'Em Reunião': 'bg-yellow-500',
+    'Visita na fazenda': 'bg-blue-500'
+  };
+
+  return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50' },
+    h('div', { className: 'bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto' },
+      h('div', { className: 'p-6' },
+        h('div', { className: 'flex items-center justify-between mb-6' },
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Participantes'),
+          h('button', { onClick: () => setShowParticipants(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
+        ),
+        h('div', { className: 'space-y-3' },
+          ...participants.map(user => {
+            const userStatus = getUserStatus(user.id);
+            return h('div', { key: user.id, className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg' },
+              h('div', { className: 'text-3xl' }, user.photo),
+              h('div', { className: 'flex-1' },
+                h('h4', { className: 'font-semibold text-gray-800' }, user.name),
+                h('p', { className: 'text-sm text-gray-500 flex items-center gap-1' },
+                  h(MapPin, { size: 14 }),
+                  getUserLocation(user.id)
+                ),
+                h('div', { className: 'flex items-center gap-2 mt-1' },
+                  h('div', { className: `w-2 h-2 rounded-full ${statusColors[userStatus]}` }),
+                  h('span', { className: 'text-xs text-gray-600' }, userStatus)
+                )
+              )
+            );
+          })
+        )
+      )
+    )
+  );
+};
+
+// Renderiza o App
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
