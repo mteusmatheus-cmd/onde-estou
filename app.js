@@ -1,4 +1,4 @@
-// ?? CONFIGURAO SUPABASE
+// ⚙️ CONFIGURAÇÃO SUPABASE
 const SUPABASE_URL = 'https://ikczlcmcbrlhdlopkoqg.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3psY21jYnJsaGRsb3Brb3FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMjAxMTYsImV4cCI6MjA3NTY5NjExNn0.GxxdTvkzMwOMY6yO8HareaB4OC2ibVNTC_63EBjrDZc';
 
@@ -6,7 +6,6 @@ const { useState, useEffect, createElement: h } = React;
 const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake } = window.Icons;
 
 const App = () => {
-  // Estados
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [currentView, setCurrentView] = useState('home');
@@ -24,25 +23,26 @@ const App = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [currentEventParticipants, setCurrentEventParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [suggestionEvent, setSuggestionEvent] = useState(null);
 
   const categories = [
-    'Comemorao aniversrio',
-    'Reunio',
+    'Comemoração aniversário',
+    'Reunião',
     'Treinamento',
-    'Integrao',
-    'Caf com DH',
+    'Integração',
+    'Café com DH',
     'Indicadores',
-    'Aniversriantes do ms',
+    'Aniversáriantes do mês',
     'Outros'
   ];
 
   const statusOptions = [
     'Em sala',
-    'Em Reunio',
+    'Em Reunião',
     'Visita na fazenda'
   ];
 
-  // Funes Supabase
   const fetchData = async (key) => {
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/dados?key=eq.${key}`, {
@@ -78,7 +78,6 @@ const App = () => {
     }
   };
 
-  // Carregar dados
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -94,46 +93,6 @@ const App = () => {
     };
     loadData();
   }, []);
-
-  // Handlers
-
-const isOnVacation = (userId) => {
-    const user = users.find(u => u.id == userId);
-    if (!user || !user.feriasInicio || !user.feriasFim) return false;
-    const now = new Date();
-    const start = new Date(user.feriasInicio);
-    const end = new Date(user.feriasFim);
-    return now >= start && now <= end;
-};
-
-
-const handleDeclinePresence = async (eventId) => {
-    const updatedEvents = events.map(e => {
-        if (e.id === eventId) {
-            const declined = typeof e.declined === 'string' ? JSON.parse(e.declined) : (e.declined || []);
-            const participants = typeof e.participants === 'string' ? JSON.parse(e.participants) : e.participants;
-            if (!declined.includes(currentUser.id)) {
-                return {
-                    ...e,
-                    declined: JSON.stringify([...declined, currentUser.id]),
-                    participants: participants.includes(currentUser.id)
-                        ? JSON.stringify(participants)
-                        : JSON.stringify([...participants, currentUser.id])
-                };
-            }
-        }
-        return e;
-    });
-    setEvents(updatedEvents);
-    await saveData('events', updatedEvents);
-};
-
-
-const handleDeleteEvent = async (eventId) => {
-    const updatedEvents = events.filter(e => e.id !== eventId);
-    setEvents(updatedEvents);
-    await saveData('events', updatedEvents);
-};
 
   const handleLogin = (email, password) => {
     const user = users.find(u => u.email === email && u.password === password);
@@ -152,19 +111,22 @@ const handleDeleteEvent = async (eventId) => {
       email: userData.email,
       password: userData.password,
       birthDate: userData.birthDate,
-      photo: '??',
+      photo: '👤',
       interests: '',
-      status: 'Em sala' // Status padro
+      status: 'Em sala',
+      role: 'user',
+      vacationStart: '',
+      vacationEnd: ''
     };
-
+    
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
     await saveData('users', updatedUsers);
-
+    
     setCurrentUser(newUser);
     setIsLoggedIn(true);
     setShowRegister(false);
-    alert('? Conta criada com sucesso!');
+    alert('✅ Conta criada com sucesso!');
   };
 
   const handleCreateEvent = async (eventData) => {
@@ -172,11 +134,13 @@ const handleDeleteEvent = async (eventId) => {
       id: Date.now().toString(),
       ...eventData,
       creator: currentUser.id,
-      participants: JSON.stringify([currentUser.id]),
-      confirmed: JSON.stringify([currentUser.id]), // Criador j confirmado
-      visibleTo: JSON.stringify(eventData.visibleTo.length > 0 ? eventData.visibleTo : users.map(u => u.id))
+      participants: JSON.stringify(eventData.participants),
+      confirmed: JSON.stringify([currentUser.id]),
+      rejected: JSON.stringify([]),
+      suggestions: JSON.stringify([]),
+      visibleTo: JSON.stringify(eventData.participants)
     };
-
+    
     const updatedEvents = [...events, newEvent];
     setEvents(updatedEvents);
     await saveData('events', updatedEvents);
@@ -184,7 +148,7 @@ const handleDeleteEvent = async (eventId) => {
   };
 
   const handleEditEvent = async (eventData) => {
-    const updatedEvents = events.map(e =>
+    const updatedEvents = events.map(e => 
       e.id === editingEvent.id ? { ...e, ...eventData } : e
     );
     setEvents(updatedEvents);
@@ -193,37 +157,83 @@ const handleDeleteEvent = async (eventId) => {
     setEditingEvent(null);
   };
 
-  const handleConfirmPresence = async (eventId) => {
+  const handleDeleteEvent = async (eventId) => {
+    if (confirm('Tem certeza que deseja deletar este evento?')) {
+      const updatedEvents = events.filter(e => e.id !== eventId);
+      setEvents(updatedEvents);
+      await saveData('events', updatedEvents);
+    }
+  };
+
+  const handleConfirmPresence = async (eventId, status) => {
     const updatedEvents = events.map(e => {
       if (e.id === eventId) {
         const confirmed = typeof e.confirmed === 'string' ? JSON.parse(e.confirmed) : (e.confirmed || []);
-        const participants = typeof e.participants === 'string' ? JSON.parse(e.participants) : e.participants;
-
-        if (!confirmed.includes(currentUser.id)) {
-          return {
-            ...e,
-            confirmed: JSON.stringify([...confirmed, currentUser.id]),
-            participants: participants.includes(currentUser.id)
-              ? JSON.stringify(participants)
-              : JSON.stringify([...participants, currentUser.id])
-          };
+        const rejected = typeof e.rejected === 'string' ? JSON.parse(e.rejected) : (e.rejected || []);
+        
+        let newConfirmed = confirmed.filter(id => id !== currentUser.id);
+        let newRejected = rejected.filter(id => id !== currentUser.id);
+        
+        if (status === 'confirmed') {
+          newConfirmed = [...newConfirmed, currentUser.id];
+        } else if (status === 'rejected') {
+          newRejected = [...newRejected, currentUser.id];
         }
+        
+        return {
+          ...e,
+          confirmed: JSON.stringify(newConfirmed),
+          rejected: JSON.stringify(newRejected)
+        };
       }
       return e;
     });
-
+    
     setEvents(updatedEvents);
     await saveData('events', updatedEvents);
+  };
+
+  const handleAddSuggestion = async (eventId, suggestion) => {
+    const updatedEvents = events.map(e => {
+      if (e.id === eventId) {
+        const suggestions = typeof e.suggestions === 'string' ? JSON.parse(e.suggestions) : (e.suggestions || []);
+        const newSuggestion = {
+          id: Date.now().toString(),
+          userId: currentUser.id,
+          userName: currentUser.name,
+          text: suggestion,
+          date: new Date().toISOString()
+        };
+        return {
+          ...e,
+          suggestions: JSON.stringify([...suggestions, newSuggestion])
+        };
+      }
+      return e;
+    });
+    
+    setEvents(updatedEvents);
+    await saveData('events', updatedEvents);
+    setShowSuggestionModal(false);
   };
 
   const handleUpdateStatus = async (newStatus) => {
     const updatedUser = { ...currentUser, status: newStatus };
     const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
-
+    
     setCurrentUser(updatedUser);
     setUsers(updatedUsers);
     await saveData('users', updatedUsers);
     setShowStatusModal(false);
+  };
+
+  const handleUpdateVacation = async (vacationStart, vacationEnd) => {
+    const updatedUser = { ...currentUser, vacationStart, vacationEnd };
+    const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+    
+    setCurrentUser(updatedUser);
+    setUsers(updatedUsers);
+    await saveData('users', updatedUsers);
   };
 
   const handleAddLocation = async (locationData) => {
@@ -232,36 +242,55 @@ const handleDeleteEvent = async (eventId) => {
       userId: currentUser.id,
       ...locationData
     };
-
+    
     const updatedLocations = [...locations, newLocation];
     setLocations(updatedLocations);
     await saveData('locations', updatedLocations);
     setShowAddLocation(false);
   };
 
+  const isUserOnVacation = (userId) => {
+    const user = users.find(u => u.id == userId);
+    if (!user?.vacationStart || !user?.vacationEnd) return false;
+    
+    const now = new Date();
+    const start = new Date(user.vacationStart);
+    const end = new Date(user.vacationEnd);
+    
+    return now >= start && now <= end;
+  };
+
   const getUserLocation = (userId) => {
+    if (isUserOnVacation(userId)) return 'Em Férias 🏖️';
+    
     const now = new Date();
     const userLocations = locations.filter(l => l.userId == userId);
-
+    
     for (const loc of userLocations) {
       const start = new Date(`${loc.startDate}T${loc.startTime}`);
       const end = new Date(`${loc.endDate}T${loc.endTime}`);
       if (now >= start && now <= end) {
-        return isOnVacation(userId) ? 'Frias' : loc.location;
+        return loc.location;
       }
     }
-    return 'Localizao no informada';
+    return 'Localização não informada';
   };
 
   const getUserStatus = (userId) => {
+    if (isUserOnVacation(userId)) return 'Em Férias';
     const user = users.find(u => u.id == userId);
-    return isOnVacation(userId) ? 'Frias' : (user?.status || 'Em sala');
+    return user?.status || 'Em sala';
+  };
+
+  const canEditEvent = (event) => {
+    if (!currentUser) return false;
+    return event.creator === currentUser.id || currentUser.role === 'admin';
   };
 
   const getBirthdaysForDate = (date) => {
     const month = date.getMonth();
     const day = date.getDate();
-
+    
     return users.filter(user => {
       if (!user.birthDate) return false;
       const birthDateParts = user.birthDate.split('-');
@@ -289,18 +318,16 @@ const handleDeleteEvent = async (eventId) => {
     });
   };
 
-  // Componente Loading
   if (loading) {
     return h('div', { className: 'min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4' },
       h('div', { className: 'text-center bg-white rounded-2xl p-8 max-w-md' },
-        h('div', { className: 'text-6xl mb-4 animate-bounce' }, '??'),
+        h('div', { className: 'text-6xl mb-4 animate-bounce' }, '📍'),
         h('p', { className: 'text-gray-800 text-xl font-semibold mb-2' }, 'Onde Estou'),
-        h('p', { className: 'text-gray-600' }, 'Conectando  base compartilhada...')
+        h('p', { className: 'text-gray-600' }, 'Conectando à base compartilhada...')
       )
     );
   }
 
-  // Login/Registro
   if (!isLoggedIn) {
     if (showRegister) {
       return h(RegisterScreen, { handleRegister, setShowRegister, users });
@@ -308,21 +335,20 @@ const handleDeleteEvent = async (eventId) => {
     return h(LoginScreen, { handleLogin, setShowRegister });
   }
 
-  // App Principal
   return h('div', { className: 'min-h-screen bg-gray-50' },
-    h(Header, { currentUser, getBirthdaysInMonth, setShowProfile, setShowStatusModal, getUserStatus }),
+    h(Header, { currentUser, getBirthdaysInMonth, setShowProfile, setShowStatusModal, getUserStatus, isUserOnVacation }),
     currentView === 'home' && h(HomeView, {
       currentUser, getUserLocation, getBirthdaysForDate, events,
       setShowCreateEvent, setShowAddLocation, users, handleConfirmPresence,
-      setEditingEvent, setShowEditEvent, getUserStatus
+      setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal
     }),
     currentView === 'calendar' && h(CalendarView, {
       selectedDate, setSelectedDate, getEventsForDate,
       getBirthdaysForDate, currentUser, users, events, handleConfirmPresence,
-      setEditingEvent, setShowEditEvent, getUserStatus
+      setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal
     }),
     currentView === 'people' && h(PeopleView, {
-      users, currentUser, getUserLocation, getUserStatus
+      users, currentUser, getUserLocation, getUserStatus, isUserOnVacation
     }),
     h(Navigation, { currentView, setCurrentView }),
     showCreateEvent && h(CreateEventModal, {
@@ -335,20 +361,21 @@ const handleDeleteEvent = async (eventId) => {
       setShowAddLocation, handleAddLocation
     }),
     showProfile && h(ProfileModal, {
-      currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus
+      currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus, 
+      handleUpdateVacation, isUserOnVacation
     }),
     showStatusModal && h(StatusModal, {
-      setShowStatusModal, handleUpdateStatus, statusOptions, currentUser
+      setShowStatusModal, handleUpdateStatus, statusOptions, currentUser, isUserOnVacation
     }),
     showParticipants && h(ParticipantsModal, {
       currentEventParticipants, users, getUserLocation, setShowParticipants, getUserStatus, events
+    }),
+    showSuggestionModal && h(SuggestionModal, {
+      setShowSuggestionModal, handleAddSuggestion, suggestionEvent
     })
   );
 };
 
-// ========== COMPONENTES DA UI ==========
-
-// LoginScreen
 const LoginScreen = ({ handleLogin, setShowRegister }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -364,7 +391,7 @@ const LoginScreen = ({ handleLogin, setShowRegister }) => {
   return h('div', { className: 'min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4' },
     h('div', { className: 'bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full' },
       h('div', { className: 'text-center mb-8' },
-        h('div', { className: 'text-6xl mb-4' }, '??'),
+        h('div', { className: 'text-6xl mb-4' }, '📍'),
         h('h1', { className: 'text-3xl font-bold text-gray-800 mb-2' }, 'Onde Estou'),
         h('p', { className: 'text-gray-600' }, 'Conecte-se com pessoas e eventos')
       ),
@@ -397,7 +424,6 @@ const LoginScreen = ({ handleLogin, setShowRegister }) => {
   );
 };
 
-// RegisterScreen
 const RegisterScreen = ({ handleRegister, setShowRegister, users }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -410,7 +436,7 @@ const RegisterScreen = ({ handleRegister, setShowRegister, users }) => {
 
   const onSubmit = () => {
     setError('');
-
+    
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword || !formData.birthDate) {
       setError('Por favor, preencha todos os campos');
       return;
@@ -422,16 +448,12 @@ const RegisterScreen = ({ handleRegister, setShowRegister, users }) => {
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('As senhas no coincidem');
+      setError('As senhas não coincidem');
       return;
     }
 
-    if (!users || !Array.isArray(users)) {
-    setError('Erro interno: lista de usuários não carregada');
-    return;
-}
-if (users.some(u => u.email === formData.email)) {
-      setError('Este email j est cadastrado');
+    if (users.some(u => u.email === formData.email)) {
+      setError('Este email já está cadastrado');
       return;
     }
 
@@ -477,7 +499,7 @@ if (users.some(u => u.email === formData.email)) {
               value: formData.password,
               onChange: (e) => setFormData({...formData, password: e.target.value}),
               className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
-              placeholder: 'Mnimo 6 caracteres'
+              placeholder: 'Mínimo 6 caracteres'
             })
           ),
           h('div', null,
@@ -509,13 +531,13 @@ if (users.some(u => u.email === formData.email)) {
   );
 };
 
-// Header
-const Header = ({ currentUser, getBirthdaysInMonth, setShowProfile, setShowStatusModal, getUserStatus }) => {
+const Header = ({ currentUser, getBirthdaysInMonth, setShowProfile, setShowStatusModal, getUserStatus, isUserOnVacation }) => {
   const currentStatus = getUserStatus(currentUser.id);
   const statusColors = {
     'Em sala': 'bg-green-500',
-    'Em Reunio': 'bg-yellow-500',
-    'Visita na fazenda': 'bg-blue-500'
+    'Em Reunião': 'bg-yellow-500',
+    'Visita na fazenda': 'bg-blue-500',
+    'Em Férias': 'bg-orange-500'
   };
 
   return h('div', { className: 'bg-white shadow-sm border-b sticky top-0 z-10' },
@@ -546,8 +568,9 @@ const Header = ({ currentUser, getBirthdaysInMonth, setShowProfile, setShowStatu
   );
 };
 
-// StatusModal
-const StatusModal = ({ setShowStatusModal, handleUpdateStatus, statusOptions, currentUser }) => {
+const StatusModal = ({ setShowStatusModal, handleUpdateStatus, statusOptions, currentUser, isUserOnVacation }) => {
+  const onVacation = isUserOnVacation(currentUser.id);
+
   return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50' },
     h('div', { className: 'bg-white rounded-2xl max-w-md w-full' },
       h('div', { className: 'p-6' },
@@ -557,34 +580,38 @@ const StatusModal = ({ setShowStatusModal, handleUpdateStatus, statusOptions, cu
             h(X, { className: 'text-gray-500', size: 24 })
           )
         ),
+        onVacation && h('div', { className: 'bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg mb-4' },
+          '🏖️ Você está em período de férias'
+        ),
         h('div', { className: 'space-y-3' },
           ...statusOptions.map(status => {
             const statusIcons = {
-              'Em sala': '??',
-              'Em Reunio': '??',
-              'Visita na fazenda': '??'
+              'Em sala': '🏢',
+              'Em Reunião': '👥',
+              'Visita na fazenda': '🚜'
             };
             const statusColors = {
               'Em sala': 'bg-green-50 border-green-200 hover:bg-green-100',
-              'Em Reunio': 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100',
+              'Em Reunião': 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100',
               'Visita na fazenda': 'bg-blue-50 border-blue-200 hover:bg-blue-100'
             };
 
             return h('button', {
               key: status,
               onClick: () => handleUpdateStatus(status),
-              className: `w-full p-4 border-2 rounded-lg transition ${statusColors[status]} flex items-center gap-3`
+              disabled: onVacation,
+              className: `w-full p-4 border-2 rounded-lg transition ${statusColors[status]} flex items-center gap-3 ${onVacation ? 'opacity-50 cursor-not-allowed' : ''}`
             },
               h('span', { className: 'text-3xl' }, statusIcons[status]),
               h('div', { className: 'text-left flex-1' },
                 h('div', { className: 'font-semibold text-gray-800' }, status),
-                h('div', { className: 'text-sm text-gray-600' },
-                  status === 'Em sala' ? 'Disponvel no escritrio' :
-                  status === 'Em Reunio' ? 'Em reunio - no disponvel' :
+                h('div', { className: 'text-sm text-gray-600' }, 
+                  status === 'Em sala' ? 'Disponível no escritório' :
+                  status === 'Em Reunião' ? 'Em reunião - não disponível' :
                   'Visitando fazenda'
                 )
               ),
-              currentUser.status === status && h('span', { className: 'text-green-600 text-xl' }, '?')
+              currentUser.status === status && h('span', { className: 'text-green-600 text-xl' }, '✓')
             );
           })
         )
@@ -593,7 +620,6 @@ const StatusModal = ({ setShowStatusModal, handleUpdateStatus, statusOptions, cu
   );
 };
 
-// Navigation
 const Navigation = ({ currentView, setCurrentView }) => {
   return h('div', { className: 'bg-white border-t fixed bottom-0 left-0 right-0 z-10' },
     h('div', { className: 'max-w-6xl mx-auto px-4 py-3 flex justify-around' },
@@ -602,14 +628,14 @@ const Navigation = ({ currentView, setCurrentView }) => {
         className: `flex flex-col items-center gap-1 ${currentView === 'home' ? 'text-purple-600' : 'text-gray-500'}`
       },
         h(MapPin, { size: 24 }),
-        h('span', { className: 'text-xs' }, 'Incio')
+        h('span', { className: 'text-xs' }, 'Início')
       ),
       h('button', {
         onClick: () => setCurrentView('calendar'),
         className: `flex flex-col items-center gap-1 ${currentView === 'calendar' ? 'text-purple-600' : 'text-gray-500'}`
       },
         h(Calendar, { size: 24 }),
-        h('span', { className: 'text-xs' }, 'Calendrio')
+        h('span', { className: 'text-xs' }, 'Calendário')
       ),
       h('button', {
         onClick: () => setCurrentView('people'),
@@ -621,9 +647,7 @@ const Navigation = ({ currentView, setCurrentView }) => {
     )
   );
 };
-
-// HomeView
-const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, setShowCreateEvent, setShowAddLocation, users, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus }) => {
+const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, setShowCreateEvent, setShowAddLocation, users, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal }) => {
   const userLocation = getUserLocation(currentUser.id);
   const todayBirthdays = getBirthdaysForDate(new Date());
   const upcomingEvents = events
@@ -636,7 +660,7 @@ const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, s
 
   return h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24' },
     h('div', { className: 'bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl p-6 text-white mb-6' },
-      h('h2', { className: 'text-2xl font-bold mb-2' }, `Ol, ${currentUser?.name.split(' ')[0]}! ??`),
+      h('h2', { className: 'text-2xl font-bold mb-2' }, `Olá, ${currentUser?.name.split(' ')[0]}! 👋`),
       h('div', { className: 'flex items-center gap-2 mt-3' },
         h(MapPin, { size: 20 }),
         h('span', null, userLocation)
@@ -646,13 +670,13 @@ const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, s
         className: 'mt-4 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg flex items-center gap-2 transition'
       },
         h(Plus, { size: 16 }),
-        'Atualizar Localizao'
+        'Atualizar Localização'
       )
     ),
     todayBirthdays.length > 0 && h('div', { className: 'bg-pink-50 border border-pink-200 rounded-xl p-4 mb-6' },
       h('h3', { className: 'font-bold text-pink-800 mb-3 flex items-center gap-2' },
         h(Gift, { size: 20 }),
-        'Aniversariantes de Hoje ??'
+        'Aniversariantes de Hoje 🎉'
       ),
       ...todayBirthdays.map(user =>
         h('div', { key: user.id, className: 'flex items-center gap-3 mb-2' },
@@ -662,7 +686,7 @@ const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, s
       )
     ),
     h('div', { className: 'flex items-center justify-between mb-4' },
-      h('h3', { className: 'text-lg font-bold text-gray-800' }, 'Prximos Eventos'),
+      h('h3', { className: 'text-lg font-bold text-gray-800' }, 'Próximos Eventos'),
       h('button', {
         onClick: () => setShowCreateEvent(true),
         className: 'bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition'
@@ -673,31 +697,34 @@ const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, s
     ),
     h('div', { className: 'space-y-4' },
       upcomingEvents.length > 0 ? upcomingEvents.map(event =>
-        h(EventCard, {
-          key: event.id,
-          event,
-          users,
-          currentUser,
+        h(EventCard, { 
+          key: event.id, 
+          event, 
+          users, 
+          currentUser, 
           handleConfirmPresence,
           setEditingEvent,
           setShowEditEvent,
-          getUserStatus
+          getUserStatus,
+          canEditEvent,
+          handleDeleteEvent,
+          setSuggestionEvent,
+          setShowSuggestionModal
         })
-      ) : h('div', { className: 'text-center text-gray-500 py-8' }, 'Nenhum evento prximo')
+      ) : h('div', { className: 'text-center text-gray-500 py-8' }, 'Nenhum evento próximo')
     )
   );
 };
 
-// EventCard
-const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus }) => {
+const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal }) => {
   const creator = users.find(u => u.id == event.creator);
   const participants = typeof event.participants === 'string' ? JSON.parse(event.participants) : event.participants;
   const confirmed = typeof event.confirmed === 'string' ? JSON.parse(event.confirmed) : (event.confirmed || []);
+  const rejected = typeof event.rejected === 'string' ? JSON.parse(event.rejected) : (event.rejected || []);
   const isParticipant = participants.includes(currentUser?.id);
   const isConfirmed = confirmed.includes(currentUser?.id);
-  const isCreator = event.creator == currentUser?.id;
-const isAdmin = currentUser?.role === 'admin';
-const canEdit = isCreator || isAdmin;
+  const isRejected = rejected.includes(currentUser?.id);
+  const canEdit = canEditEvent(event);
 
   return h('div', { className: 'bg-white rounded-xl shadow-sm border p-4 hover:shadow-md transition' },
     h('div', { className: 'flex items-start justify-between mb-3' },
@@ -705,24 +732,25 @@ const canEdit = isCreator || isAdmin;
         h('h4', { className: 'font-bold text-gray-800 mb-1' }, event.title),
         h('span', { className: 'text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full' }, event.category)
       ),
-      canEdit && h('button', {
-        onClick: () => {
-          setEditingEvent(event);
-          setShowEditEvent(true);
-        },
-        className: 'text-blue-600 hover:text-blue-700 text-sm font-medium'
-      }, '?? Editar'),
-    canEdit && h('button', {
-        onClick: () => handleDeleteEvent(event.id),
-        className: 'text-red-600 hover:text-red-700 text-sm font-medium ml-2'
-    }, '??? Excluir')
-
+      h('div', { className: 'flex items-center gap-2' },
+        canEdit && h('button', {
+          onClick: () => {
+            setEditingEvent(event);
+            setShowEditEvent(true);
+          },
+          className: 'text-blue-600 hover:text-blue-700 text-sm font-medium'
+        }, '✏️'),
+        canEdit && h('button', {
+          onClick: () => handleDeleteEvent(event.id),
+          className: 'text-red-600 hover:text-red-700 text-sm font-medium'
+        }, '🗑️')
+      )
     ),
     h('p', { className: 'text-gray-600 text-sm mb-3' }, event.description),
     h('div', { className: 'space-y-2 mb-3' },
       h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
         h(Calendar, { size: 16 }),
-        h('span', null, `${new Date(event.date).toLocaleDateString('pt-BR')} s ${event.time}`)
+        h('span', null, `${new Date(event.date).toLocaleDateString('pt-BR')} às ${event.time}`)
       ),
       h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
         h(MapPin, { size: 16 }),
@@ -730,189 +758,44 @@ const canEdit = isCreator || isAdmin;
       ),
       h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
         h(Users, { size: 16 }),
-        h('span', null, `${confirmed.length} confirmados / ${participants.length} participantes`)
+        h('span', null, `${confirmed.length} confirmados / ${rejected.length} não podem / ${participants.length} total`)
       )
     ),
-    h('div', { className: 'flex items-center gap-2 mb-3' },
-      h('div', { className: 'text-xl' }, creator?.photo || '??'),
-      h('span', { className: 'text-sm text-gray-600' }, `Criado por ${creator?.name || 'Usurio'}`)
+    h('div', { className: 'flex items-center gap-2 mb-4' },
+      h('div', { className: 'text-xl' }, creator?.photo || '👤'),
+      h('span', { className: 'text-sm text-gray-600' }, `Criado por ${creator?.name || 'Usuário'}`)
     ),
-    h('button', {
-      onClick: () => handleConfirmPresence(event.id),
-      disabled: isConfirmed,
-      className: `w-full py-2 rounded-lg font-semibold transition ${
-        isConfirmed
-          ? 'bg-green-100 text-green-700'
-          : 'bg-purple-600 text-white hover:bg-purple-700'
-      }`
-    }, isConfirmed ? '? Presena Confirmada' : '?? Confirmar Presena'),
-
-h('button', {
-    onClick: () => {
-        const suggestion = prompt('Digite sua sugesto para este evento:');
-        if (suggestion) {
-            const updatedEvents = events.map(e => {
-                if (e.id === event.id) {
-                    const suggestions = typeof e.suggestions === 'string' ? JSON.parse(e.suggestions) : (e.suggestions || []);
-                    return {
-                        ...e,
-                        suggestions: JSON.stringify([...suggestions, { userId: currentUser.id, text: suggestion }])
-                    };
-                }
-                return e;
-            });
-            setEvents(updatedEvents);
-            saveData('events', updatedEvents);
-        }
-    },
-    className: 'w-full py-2 rounded-lg font-semibold transition bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-}, '?? Enviar Sugesto')
-,
-!isConfirmed && h('button', {
-    onClick: () => handleDeclinePresence(event.id),
-    className: 'w-full py-2 rounded-lg font-semibold transition bg-red-100 text-red-700 hover:bg-red-200'
-}, '? No poderei participar')
-
-  );
-};
-
-// EditEventModal
-const EditEventModal = ({ setShowEditEvent, handleEditEvent, categories, users, currentUser, editingEvent }) => {
-  const [formData, setFormData] = useState({
-    title: editingEvent?.title || '',
-    description: editingEvent?.description || '',
-    date: editingEvent?.date || '',
-    time: editingEvent?.time || '',
-    location: editingEvent?.location || '',
-    category: editingEvent?.category || 'Outros',
-    customCategory: '',
-    visibleTo: typeof editingEvent?.visibleTo === 'string' ? JSON.parse(editingEvent.visibleTo) : (editingEvent?.visibleTo || [])
-  });
-
-  const onSubmit = () => {
-    if (!formData.title || !formData.description || !formData.date || !formData.time || !formData.location) {
-      alert('Por favor, preencha todos os campos obrigatrios');
-      return;
-    }
-
-    if (formData.category === 'Outros' && !formData.customCategory) {
-      alert('Por favor, digite o nome da categoria');
-      return;
-    }
-
-    const finalCategory = formData.category === 'Outros' ? formData.customCategory : formData.category;
-    handleEditEvent({
-      ...formData,
-      category: finalCategory,
-      visibleTo: JSON.stringify(formData.visibleTo.length > 0 ? formData.visibleTo : users.map(u => u.id))
-    });
-  };
-
-  const toggleUser = (userId) => {
-    setFormData(prev => ({
-      ...prev,
-      visibleTo: prev.visibleTo.includes(userId)
-        ? prev.visibleTo.filter(id => id !== userId)
-        : [...prev.visibleTo, userId]
-    }));
-  };
-
-  return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto' },
-    h('div', { className: 'bg-white rounded-2xl max-w-md w-full my-8' },
-      h('div', { className: 'p-6' },
-        h('div', { className: 'flex items-center justify-between mb-6' },
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Editar Evento'),
-          h('button', { onClick: () => setShowEditEvent(false) },
-            h(X, { className: 'text-gray-500', size: 24 })
-          )
-        ),
-        h('div', { className: 'space-y-4' },
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Ttulo'),
-            h('input', {
-              type: 'text',
-              value: formData.title,
-              onChange: (e) => setFormData({...formData, title: e.target.value}),
-              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
-              placeholder: 'Nome do evento'
-            })
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrio'),
-            h('textarea', {
-              value: formData.description,
-              onChange: (e) => setFormData({...formData, description: e.target.value}),
-              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
-              rows: 3,
-              placeholder: 'Descreva seu evento'
-            })
-          ),
-          h('div', { className: 'grid grid-cols-2 gap-4' },
-            h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data'),
-              h('input', {
-                type: 'date',
-                value: formData.date,
-                onChange: (e) => setFormData({...formData, date: e.target.value}),
-                className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
-              })
-            ),
-            h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Hora'),
-              h('input', {
-                type: 'time',
-                value: formData.time,
-                onChange: (e) => setFormData({...formData, time: e.target.value}),
-                className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
-              })
-            )
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Local'),
-            h('input', {
-              type: 'text',
-              value: formData.location,
-              onChange: (e) => setFormData({...formData, location: e.target.value}),
-              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
-              placeholder: 'Digite o local do evento'
-            })
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Categoria'),
-            h('select', {
-              value: formData.category,
-              onChange: (e) => setFormData({...formData, category: e.target.value}),
-              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
-            },
-              ...categories.map(cat =>
-                h('option', { key: cat, value: cat }, cat)
-              )
-            )
-          ),
-          formData.category === 'Outros' && h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Digite a categoria'),
-            h('input', {
-              type: 'text',
-              value: formData.customCategory,
-              onChange: (e) => setFormData({...formData, customCategory: e.target.value}),
-              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
-              placeholder: 'Nome da categoria'
-            })
-          ),
-          h('button', {
-            onClick: onSubmit,
-            className: 'w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition'
-          }, 'Salvar Alteraes')
-        )
-      )
+    isParticipant && h('div', { className: 'flex gap-2 mb-3' },
+      h('button', {
+        onClick: () => handleConfirmPresence(event.id, 'confirmed'),
+        className: `flex-1 py-2 rounded-lg font-semibold transition ${
+          isConfirmed
+            ? 'bg-green-100 text-green-700'
+            : 'bg-gray-100 text-gray-700 hover:bg-green-50'
+        }`
+      }, isConfirmed ? '✓ Confirmado' : 'Confirmar'),
+      h('button', {
+        onClick: () => handleConfirmPresence(event.id, 'rejected'),
+        className: `flex-1 py-2 rounded-lg font-semibold transition ${
+          isRejected
+            ? 'bg-red-100 text-red-700'
+            : 'bg-gray-100 text-gray-700 hover:bg-red-50'
+        }`
+      }, isRejected ? '✗ Não vou' : 'Não vou'),
+      h('button', {
+        onClick: () => {
+          setSuggestionEvent(event);
+          setShowSuggestionModal(true);
+        },
+        className: 'flex-1 bg-blue-100 text-blue-700 py-2 rounded-lg font-semibold hover:bg-blue-200 transition'
+      }, '💡 Sugestão')
     )
   );
 };
 
-// CalendarView
-const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirthdaysForDate, currentUser, users, events, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus }) => {
+const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirthdaysForDate, currentUser, users, events, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-
+  
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -920,7 +803,7 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
-
+    
     const days = [];
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(null);
@@ -932,7 +815,7 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
   };
 
   const days = getDaysInMonth(currentMonth);
-  const monthNames = ['Janeiro', 'Fevereiro', 'Maro', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const eventsForSelectedDate = getEventsForDate(selectedDate);
   const birthdaysForSelectedDate = getBirthdaysForDate(selectedDate);
 
@@ -942,17 +825,17 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
         h('button', {
           onClick: () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)),
           className: 'px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200'
-        }, '?'),
+        }, '←'),
         h('h2', { className: 'text-xl font-bold text-gray-800' },
           `${monthNames[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`
         ),
         h('button', {
           onClick: () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)),
           className: 'px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200'
-        }, '?')
+        }, '→')
       ),
       h('div', { className: 'grid grid-cols-7 gap-2 mb-2' },
-        ...['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sb'].map(day =>
+        ...['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day =>
           h('div', { key: day, className: 'text-center text-sm font-semibold text-gray-600 py-2' }, day)
         )
       ),
@@ -1009,33 +892,37 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
         )
       ),
       eventsForSelectedDate.length > 0 ? eventsForSelectedDate.map(event =>
-        h(EventCard, {
-          key: event.id,
-          event,
-          users,
+        h(EventCard, { 
+          key: event.id, 
+          event, 
+          users, 
           currentUser,
           handleConfirmPresence,
           setEditingEvent,
           setShowEditEvent,
-          getUserStatus
+          getUserStatus,
+          canEditEvent,
+          handleDeleteEvent,
+          setSuggestionEvent,
+          setShowSuggestionModal
         })
       ) : h('div', { className: 'text-center text-gray-500 py-8' }, 'Nenhum evento nesta data')
     )
   );
 };
 
-// PeopleView
-const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus }) => {
+const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus, isUserOnVacation }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const filteredUsers = users.filter(u =>
+  const filteredUsers = users.filter(u => 
     u.id !== currentUser.id &&
     u.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const statusColors = {
     'Em sala': 'bg-green-500',
-    'Em Reunio': 'bg-yellow-500',
-    'Visita na fazenda': 'bg-blue-500'
+    'Em Reunião': 'bg-yellow-500',
+    'Visita na fazenda': 'bg-blue-500',
+    'Em Férias': 'bg-orange-500'
   };
 
   return h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24' },
@@ -1075,7 +962,6 @@ const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus }) => {
   );
 };
 
-// CreateEventModal (continua igual, sem alteraes necessrias para novas funcionalidades)
 const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, users, currentUser }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -1085,34 +971,46 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
     location: '',
     category: 'Outros',
     customCategory: '',
-    visibleTo: []
+    participants: []
   });
 
   const onSubmit = () => {
     if (!formData.title || !formData.description || !formData.date || !formData.time || !formData.location) {
-      alert('Por favor, preencha todos os campos obrigatrios');
+      alert('Por favor, preencha todos os campos obrigatórios');
       return;
     }
-
+    
     if (formData.category === 'Outros' && !formData.customCategory) {
       alert('Por favor, digite o nome da categoria');
       return;
     }
 
+    if (formData.participants.length === 0) {
+      alert('Por favor, selecione pelo menos um participante');
+      return;
+    }
+    
     const finalCategory = formData.category === 'Outros' ? formData.customCategory : formData.category;
     handleCreateEvent({
       ...formData,
       category: finalCategory,
-      visibleTo: formData.visibleTo.length > 0 ? formData.visibleTo : users.map(u => u.id)
+      participants: [...formData.participants, currentUser.id]
     });
   };
 
   const toggleUser = (userId) => {
     setFormData(prev => ({
       ...prev,
-      visibleTo: prev.visibleTo.includes(userId)
-        ? prev.visibleTo.filter(id => id !== userId)
-        : [...prev.visibleTo, userId]
+      participants: prev.participants.includes(userId)
+        ? prev.participants.filter(id => id !== userId)
+        : [...prev.participants, userId]
+    }));
+  };
+
+  const selectAllUsers = () => {
+    setFormData(prev => ({
+      ...prev,
+      participants: users.filter(u => u.id !== currentUser.id).map(u => u.id)
     }));
   };
 
@@ -1125,9 +1023,9 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
             h(X, { className: 'text-gray-500', size: 24 })
           )
         ),
-        h('div', { className: 'space-y-4' },
+        h('div', { className: 'space-y-4 max-h-96 overflow-y-auto' },
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Ttulo'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título'),
             h('input', {
               type: 'text',
               value: formData.title,
@@ -1137,7 +1035,7 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
             })
           ),
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrio'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'),
             h('textarea', {
               value: formData.description,
               onChange: (e) => setFormData({...formData, description: e.target.value}),
@@ -1194,12 +1092,18 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
               type: 'text',
               value: formData.customCategory,
               onChange: (e) => setFormData({...formData, customCategory: e.target.value}),
-              className: 'w-full px-4 py-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
               placeholder: 'Nome da categoria'
             })
           ),
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Quem pode ver este evento?'),
+            h('div', { className: 'flex items-center justify-between mb-2' },
+              h('label', { className: 'block text-sm font-medium text-gray-700' }, 'Convidar Participantes'),
+              h('button', {
+                onClick: selectAllUsers,
+                className: 'text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200'
+              }, 'Convidar Todos')
+            ),
             h('div', { className: 'border border-gray-300 rounded-lg max-h-48 overflow-y-auto' },
               ...users.filter(u => u.id !== currentUser.id).map(user =>
                 h('label', {
@@ -1208,7 +1112,7 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
                 },
                   h('input', {
                     type: 'checkbox',
-                    checked: formData.visibleTo.includes(user.id),
+                    checked: formData.participants.includes(user.id),
                     onChange: () => toggleUser(user.id),
                     className: 'w-4 h-4 text-purple-600 rounded focus:ring-purple-500'
                   }),
@@ -1218,7 +1122,7 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
               )
             ),
             h('p', { className: 'text-xs text-gray-500 mt-2' },
-              formData.visibleTo.length === 0 ? 'Todos podero ver' : `${formData.visibleTo.length} pessoa(s) selecionada(s)`
+              formData.participants.length === 0 ? 'Selecione participantes' : `${formData.participants.length} pessoa(s) selecionada(s)`
             )
           ),
           h('button', {
@@ -1231,7 +1135,122 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
   );
 };
 
-// AddLocationModal
+const EditEventModal = ({ setShowEditEvent, handleEditEvent, categories, users, currentUser, editingEvent }) => {
+  const [formData, setFormData] = useState({
+    title: editingEvent?.title || '',
+    description: editingEvent?.description || '',
+    date: editingEvent?.date || '',
+    time: editingEvent?.time || '',
+    location: editingEvent?.location || '',
+    category: editingEvent?.category || 'Outros',
+    customCategory: ''
+  });
+
+  const onSubmit = () => {
+    if (!formData.title || !formData.description || !formData.date || !formData.time || !formData.location) {
+      alert('Por favor, preencha todos os campos obrigatórios');
+      return;
+    }
+    
+    const finalCategory = formData.category === 'Outros' ? formData.customCategory : formData.category;
+    handleEditEvent({
+      ...formData,
+      category: finalCategory
+    });
+  };
+
+  return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto' },
+    h('div', { className: 'bg-white rounded-2xl max-w-md w-full my-8' },
+      h('div', { className: 'p-6' },
+        h('div', { className: 'flex items-center justify-between mb-6' },
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Editar Evento'),
+          h('button', { onClick: () => setShowEditEvent(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
+        ),
+        h('div', { className: 'space-y-4 max-h-96 overflow-y-auto' },
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título'),
+            h('input', {
+              type: 'text',
+              value: formData.title,
+              onChange: (e) => setFormData({...formData, title: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Nome do evento'
+            })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'),
+            h('textarea', {
+              value: formData.description,
+              onChange: (e) => setFormData({...formData, description: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              rows: 3,
+              placeholder: 'Descreva seu evento'
+            })
+          ),
+          h('div', { className: 'grid grid-cols-2 gap-4' },
+            h('div', null,
+              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data'),
+              h('input', {
+                type: 'date',
+                value: formData.date,
+                onChange: (e) => setFormData({...formData, date: e.target.value}),
+                className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              })
+            ),
+            h('div', null,
+              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1'}, 'Hora'),
+              h('input', {
+                type: 'time',
+                value: formData.time,
+                onChange: (e) => setFormData({...formData, time: e.target.value}),
+                className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+              })
+            )
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Local'),
+            h('input', {
+              type: 'text',
+              value: formData.location,
+              onChange: (e) => setFormData({...formData, location: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Digite o local do evento'
+            })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Categoria'),
+            h('select', {
+              value: formData.category,
+              onChange: (e) => setFormData({...formData, category: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+            },
+              ...categories.map(cat =>
+                h('option', { key: cat, value: cat }, cat)
+              )
+            )
+          ),
+          formData.category === 'Outros' && h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Digite a categoria'),
+            h('input', {
+              type: 'text',
+              value: formData.customCategory,
+              onChange: (e) => setFormData({...formData, customCategory: e.target.value}),
+              className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
+              placeholder: 'Nome da categoria'
+            })
+          ),
+          h('button', {
+            onClick: onSubmit,
+            className: 'w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition'
+          }, 'Salvar Alterações')
+        )
+      )
+    )
+  );
+};
+
 const AddLocationModal = ({ setShowAddLocation, handleAddLocation }) => {
   const [formData, setFormData] = useState({
     location: '',
@@ -1253,24 +1272,24 @@ const AddLocationModal = ({ setShowAddLocation, handleAddLocation }) => {
     h('div', { className: 'bg-white rounded-2xl max-w-md w-full' },
       h('div', { className: 'p-6' },
         h('div', { className: 'flex items-center justify-between mb-6' },
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Atualizar Localizao'),
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Atualizar Localização'),
           h('button', { onClick: () => setShowAddLocation(false) },
             h(X, { className: 'text-gray-500', size: 24 })
           )
         ),
         h('div', { className: 'space-y-4' },
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Onde voc est?'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Onde você está?'),
             h('input', {
               type: 'text',
               value: formData.location,
               onChange: (e) => setFormData({...formData, location: e.target.value}),
               className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
-              placeholder: 'Ex: Escritrio - Sala 304, Home Office, etc'
+              placeholder: 'Ex: Escritório - Sala 304, Home Office, etc'
             })
           ),
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Incio'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Início'),
             h('div', { className: 'grid grid-cols-2 gap-2' },
               h('input', {
                 type: 'date',
@@ -1306,19 +1325,38 @@ const AddLocationModal = ({ setShowAddLocation, handleAddLocation }) => {
           h('button', {
             onClick: onSubmit,
             className: 'w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition'
-          }, 'Salvar Localizao')
+          }, 'Salvar Localização')
         )
       )
     )
   );
 };
 
-// ProfileModal
-const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus }) => {
+const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus, handleUpdateVacation, isUserOnVacation }) => {
+  const [vacationStart, setVacationStart] = useState(currentUser?.vacationStart || '');
+  const [vacationEnd, setVacationEnd] = useState(currentUser?.vacationEnd || '');
+  const onVacation = isUserOnVacation(currentUser.id);
+
+  const saveVacation = () => {
+    if (vacationStart && vacationEnd) {
+      if (new Date(vacationStart) > new Date(vacationEnd)) {
+        alert('Data de início não pode ser após a data de fim');
+        return;
+      }
+      handleUpdateVacation(vacationStart, vacationEnd);
+      alert('Férias atualizadas com sucesso!');
+    }
+  };
+
+  const clearVacation = () => {
+    handleUpdateVacation('', '');
+  };
+
   const statusColors = {
     'Em sala': 'bg-green-500',
-    'Em Reunio': 'bg-yellow-500',
-    'Visita na fazenda': 'bg-blue-500'
+    'Em Reunião': 'bg-yellow-500',
+    'Visita na fazenda': 'bg-blue-500',
+    'Em Férias': 'bg-orange-500'
   };
   const currentStatus = getUserStatus(currentUser.id);
 
@@ -1336,14 +1374,14 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
           h('h3', { className: 'text-xl font-bold text-gray-800' }, currentUser?.name),
           h('p', { className: 'text-gray-600' }, currentUser?.email),
           currentUser?.birthDate && h('p', { className: 'text-sm text-gray-500 mt-1' },
-            `Aniversrio: ${currentUser.birthDate.split('-').reverse().join('/')}`
+            `Aniversário: ${currentUser.birthDate.split('-').reverse().join('/')}`
           )
         ),
         h('div', { className: 'space-y-4' },
           h('div', { className: 'bg-gray-50 rounded-lg p-4' },
             h('h4', { className: 'font-medium mb-2 flex items-center gap-2' },
               h(MapPin, { size: 20, className: 'text-purple-600' }),
-              'Localizao Atual'
+              'Localização Atual'
             ),
             h('p', { className: 'text-gray-700' }, getUserLocation(currentUser.id))
           ),
@@ -1353,6 +1391,40 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
               h('div', { className: `w-3 h-3 rounded-full ${statusColors[currentStatus]}` }),
               h('span', { className: 'text-gray-700' }, currentStatus)
             )
+          ),
+          h('div', { className: 'bg-orange-50 border border-orange-200 rounded-lg p-4' },
+            h('h4', { className: 'font-medium mb-3 text-orange-800' }, '🏖️ Período de Férias'),
+            h('div', { className: 'space-y-3' },
+              h('div', null,
+                h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data de Início'),
+                h('input', {
+                  type: 'date',
+                  value: vacationStart,
+                  onChange: (e) => setVacationStart(e.target.value),
+                  className: 'w-full px-3 py-2 border border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
+                })
+              ),
+              h('div', null,
+                h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data de Fim'),
+                h('input', {
+                  type: 'date',
+                  value: vacationEnd,
+                  onChange: (e) => setVacationEnd(e.target.value),
+                  className: 'w-full px-3 py-2 border border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
+                })
+              ),
+              h('div', { className: 'flex gap-2' },
+                h('button', {
+                  onClick: saveVacation,
+                  className: 'flex-1 bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition'
+                }, 'Salvar Férias'),
+                h('button', {
+                  onClick: clearVacation,
+                  className: 'flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-400 transition'
+                }, 'Limpar')
+              )
+            ),
+            onVacation && h('p', { className: 'text-sm text-orange-700 mt-2' }, '✓ Você está em férias!')
           ),
           h('button', {
             onClick: () => {
@@ -1368,13 +1440,13 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
   );
 };
 
-// ParticipantsModal
 const ParticipantsModal = ({ currentEventParticipants, users, getUserLocation, setShowParticipants, getUserStatus, events }) => {
   const participants = users.filter(u => currentEventParticipants.includes(u.id));
   const statusColors = {
     'Em sala': 'bg-green-500',
-    'Em Reunio': 'bg-yellow-500',
-    'Visita na fazenda': 'bg-blue-500'
+    'Em Reunião': 'bg-yellow-500',
+    'Visita na fazenda': 'bg-blue-500',
+    'Em Férias': 'bg-orange-500'
   };
 
   return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50' },
@@ -1410,6 +1482,50 @@ const ParticipantsModal = ({ currentEventParticipants, users, getUserLocation, s
   );
 };
 
-// Renderiza o App
+const SuggestionModal = ({ setShowSuggestionModal, handleAddSuggestion, suggestionEvent }) => {
+  const [suggestion, setSuggestion] = useState('');
+
+  const onSubmit = () => {
+    if (!suggestion.trim()) {
+      alert('Por favor, digite uma sugestão');
+      return;
+    }
+    handleAddSuggestion(suggestionEvent.id, suggestion);
+    setSuggestion('');
+  };
+
+  return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50' },
+    h('div', { className: 'bg-white rounded-2xl max-w-md w-full' },
+      h('div', { className: 'p-6' },
+        h('div', { className: 'flex items-center justify-between mb-6' },
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '💡 Sugestão para o Evento'),
+          h('button', { onClick: () => setShowSuggestionModal(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
+        ),
+        h('div', { className: 'space-y-4' },
+          h('p', { className: 'text-gray-600 text-sm' },
+            `Evento: ${suggestionEvent?.title}`
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Sua Sugestão'),
+            h('textarea', {
+              value: suggestion,
+              onChange: (e) => setSuggestion(e.target.value),
+              className: 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+              rows: 4,
+              placeholder: 'Compartilhe sua ideia ou sugestão...'
+            })
+          ),
+          h('button', {
+            onClick: onSubmit,
+            className: 'w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition'
+          }, 'Enviar Sugestão')
+        )
+      )
+    )
+  );
+};
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(App));
