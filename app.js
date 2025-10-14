@@ -96,6 +96,45 @@ const App = () => {
   }, []);
 
   // Handlers
+
+const isOnVacation = (userId) => {
+    const user = users.find(u => u.id == userId);
+    if (!user || !user.feriasInicio || !user.feriasFim) return false;
+    const now = new Date();
+    const start = new Date(user.feriasInicio);
+    const end = new Date(user.feriasFim);
+    return now >= start && now <= end;
+};
+
+
+const handleDeclinePresence = async (eventId) => {
+    const updatedEvents = events.map(e => {
+        if (e.id === eventId) {
+            const declined = typeof e.declined === 'string' ? JSON.parse(e.declined) : (e.declined || []);
+            const participants = typeof e.participants === 'string' ? JSON.parse(e.participants) : e.participants;
+            if (!declined.includes(currentUser.id)) {
+                return {
+                    ...e,
+                    declined: JSON.stringify([...declined, currentUser.id]),
+                    participants: participants.includes(currentUser.id)
+                        ? JSON.stringify(participants)
+                        : JSON.stringify([...participants, currentUser.id])
+                };
+            }
+        }
+        return e;
+    });
+    setEvents(updatedEvents);
+    await saveData('events', updatedEvents);
+};
+
+
+const handleDeleteEvent = async (eventId) => {
+    const updatedEvents = events.filter(e => e.id !== eventId);
+    setEvents(updatedEvents);
+    await saveData('events', updatedEvents);
+};
+
   const handleLogin = (email, password) => {
     const user = users.find(u => u.email === email && u.password === password);
     if (user) {
@@ -208,7 +247,7 @@ const App = () => {
       const start = new Date(`${loc.startDate}T${loc.startTime}`);
       const end = new Date(`${loc.endDate}T${loc.endTime}`);
       if (now >= start && now <= end) {
-        return loc.location;
+        return isOnVacation(userId) ? 'Férias' : loc.location;
       }
     }
     return 'Localização não informada';
@@ -216,7 +255,7 @@ const App = () => {
 
   const getUserStatus = (userId) => {
     const user = users.find(u => u.id == userId);
-    return user?.status || 'Em sala';
+    return isOnVacation(userId) ? 'Férias' : (user?.status || 'Em sala');
   };
 
   const getBirthdaysForDate = (date) => {
@@ -653,6 +692,8 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
   const isParticipant = participants.includes(currentUser?.id);
   const isConfirmed = confirmed.includes(currentUser?.id);
   const isCreator = event.creator == currentUser?.id;
+const isAdmin = currentUser?.role === 'admin';
+const canEdit = isCreator || isAdmin;
 
   return h('div', { className: 'bg-white rounded-xl shadow-sm border p-4 hover:shadow-md transition' },
     h('div', { className: 'flex items-start justify-between mb-3' },
@@ -660,13 +701,18 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
         h('h4', { className: 'font-bold text-gray-800 mb-1' }, event.title),
         h('span', { className: 'text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full' }, event.category)
       ),
-      isCreator && h('button', {
+      canEdit && h('button', {
         onClick: () => {
           setEditingEvent(event);
           setShowEditEvent(true);
         },
         className: 'text-blue-600 hover:text-blue-700 text-sm font-medium'
-      }, '✏️ Editar')
+      }, '✏️ Editar'),
+    canEdit && h('button', {
+        onClick: () => handleDeleteEvent(event.id),
+        className: 'text-red-600 hover:text-red-700 text-sm font-medium ml-2'
+    }, '🗑️ Excluir')
+    
     ),
     h('p', { className: 'text-gray-600 text-sm mb-3' }, event.description),
     h('div', { className: 'space-y-2 mb-3' },
@@ -695,7 +741,34 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
           ? 'bg-green-100 text-green-700'
           : 'bg-purple-600 text-white hover:bg-purple-700'
       }`
-    }, isConfirmed ? '✓ Presença Confirmada' : '📋 Confirmar Presença')
+    }, isConfirmed ? '✓ Presença Confirmada' : '📋 Confirmar Presença'),
+
+h('button', {
+    onClick: () => {
+        const suggestion = prompt('Digite sua sugestão para este evento:');
+        if (suggestion) {
+            const updatedEvents = events.map(e => {
+                if (e.id === event.id) {
+                    const suggestions = typeof e.suggestions === 'string' ? JSON.parse(e.suggestions) : (e.suggestions || []);
+                    return {
+                        ...e,
+                        suggestions: JSON.stringify([...suggestions, { userId: currentUser.id, text: suggestion }])
+                    };
+                }
+                return e;
+            });
+            setEvents(updatedEvents);
+            saveData('events', updatedEvents);
+        }
+    },
+    className: 'w-full py-2 rounded-lg font-semibold transition bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+}, '💡 Enviar Sugestão')
+,
+!isConfirmed && h('button', {
+    onClick: () => handleDeclinePresence(event.id),
+    className: 'w-full py-2 rounded-lg font-semibold transition bg-red-100 text-red-700 hover:bg-red-200'
+}, '❌ Não poderei participar')
+
   );
 };
 
