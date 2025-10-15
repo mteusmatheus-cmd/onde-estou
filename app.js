@@ -25,6 +25,8 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [suggestionEvent, setSuggestionEvent] = useState(null);
+  const [showEventSuggestions, setShowEventSuggestions] = useState(false);
+  const [selectedEventForSuggestions, setSelectedEventForSuggestions] = useState(null);
 
   const categories = [
     'Comemoração aniversário',
@@ -260,6 +262,17 @@ const App = () => {
     return now >= start && now <= end;
   };
 
+  const getVacationInfo = (userId) => {
+    const user = users.find(u => u.id == userId);
+    if (!user?.vacationStart || !user?.vacationEnd) return null;
+    
+    return {
+      start: new Date(user.vacationStart).toLocaleDateString('pt-BR'),
+      end: new Date(user.vacationEnd).toLocaleDateString('pt-BR'),
+      isActive: isUserOnVacation(userId)
+    };
+  };
+
   const getUserLocation = (userId) => {
     if (isUserOnVacation(userId)) return 'Em Férias 🏖️';
     
@@ -340,15 +353,17 @@ const App = () => {
     currentView === 'home' && h(HomeView, {
       currentUser, getUserLocation, getBirthdaysForDate, events,
       setShowCreateEvent, setShowAddLocation, users, handleConfirmPresence,
-      setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal
+      setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal,
+      setShowEventSuggestions, setSelectedEventForSuggestions
     }),
     currentView === 'calendar' && h(CalendarView, {
       selectedDate, setSelectedDate, getEventsForDate,
       getBirthdaysForDate, currentUser, users, events, handleConfirmPresence,
-      setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal
+      setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal,
+      setShowEventSuggestions, setSelectedEventForSuggestions
     }),
     currentView === 'people' && h(PeopleView, {
-      users, currentUser, getUserLocation, getUserStatus, isUserOnVacation
+      users, currentUser, getUserLocation, getUserStatus, isUserOnVacation, getVacationInfo
     }),
     h(Navigation, { currentView, setCurrentView }),
     showCreateEvent && h(CreateEventModal, {
@@ -362,7 +377,7 @@ const App = () => {
     }),
     showProfile && h(ProfileModal, {
       currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus, 
-      handleUpdateVacation, isUserOnVacation
+      handleUpdateVacation, isUserOnVacation, getVacationInfo
     }),
     showStatusModal && h(StatusModal, {
       setShowStatusModal, handleUpdateStatus, statusOptions, currentUser, isUserOnVacation
@@ -372,6 +387,9 @@ const App = () => {
     }),
     showSuggestionModal && h(SuggestionModal, {
       setShowSuggestionModal, handleAddSuggestion, suggestionEvent
+    }),
+    showEventSuggestions && h(EventSuggestionsModal, {
+      setShowEventSuggestions, selectedEventForSuggestions, users
     })
   );
 };
@@ -647,7 +665,8 @@ const Navigation = ({ currentView, setCurrentView }) => {
     )
   );
 };
-const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, setShowCreateEvent, setShowAddLocation, users, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal }) => {
+
+const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, setShowCreateEvent, setShowAddLocation, users, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal, setShowEventSuggestions, setSelectedEventForSuggestions }) => {
   const userLocation = getUserLocation(currentUser.id);
   const todayBirthdays = getBirthdaysForDate(new Date());
   const upcomingEvents = events
@@ -709,21 +728,25 @@ const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, s
           canEditEvent,
           handleDeleteEvent,
           setSuggestionEvent,
-          setShowSuggestionModal
+          setShowSuggestionModal,
+          setShowEventSuggestions,
+          setSelectedEventForSuggestions
         })
       ) : h('div', { className: 'text-center text-gray-500 py-8' }, 'Nenhum evento próximo')
     )
   );
 };
 
-const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal }) => {
+const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal, setShowEventSuggestions, setSelectedEventForSuggestions }) => {
   const creator = users.find(u => u.id == event.creator);
   const participants = typeof event.participants === 'string' ? JSON.parse(event.participants) : event.participants;
   const confirmed = typeof event.confirmed === 'string' ? JSON.parse(event.confirmed) : (event.confirmed || []);
   const rejected = typeof event.rejected === 'string' ? JSON.parse(event.rejected) : (event.rejected || []);
+  const suggestions = typeof event.suggestions === 'string' ? JSON.parse(event.suggestions) : (event.suggestions || []);
   const isParticipant = participants.includes(currentUser?.id);
   const isConfirmed = confirmed.includes(currentUser?.id);
   const isRejected = rejected.includes(currentUser?.id);
+  const isCreator = event.creator == currentUser?.id;
   const canEdit = canEditEvent(event);
 
   return h('div', { className: 'bg-white rounded-xl shadow-sm border p-4 hover:shadow-md transition' },
@@ -743,7 +766,14 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
         canEdit && h('button', {
           onClick: () => handleDeleteEvent(event.id),
           className: 'text-red-600 hover:text-red-700 text-sm font-medium'
-        }, '🗑️')
+        }, '🗑️'),
+        isCreator && suggestions.length > 0 && h('button', {
+          onClick: () => {
+            setSelectedEventForSuggestions(event);
+            setShowEventSuggestions(true);
+          },
+          className: 'text-blue-600 hover:text-blue-700 text-sm font-medium'
+        }, `💭 ${suggestions.length}`)
       )
     ),
     h('p', { className: 'text-gray-600 text-sm mb-3' }, event.description),
@@ -765,7 +795,7 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
       h('div', { className: 'text-xl' }, creator?.photo || '👤'),
       h('span', { className: 'text-sm text-gray-600' }, `Criado por ${creator?.name || 'Usuário'}`)
     ),
-    isParticipant && h('div', { className: 'flex gap-2 mb-3' },
+    isParticipant && h('div', { className: 'flex gap-2' },
       h('button', {
         onClick: () => handleConfirmPresence(event.id, 'confirmed'),
         className: `flex-1 py-2 rounded-lg font-semibold transition ${
@@ -793,7 +823,7 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
   );
 };
 
-const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirthdaysForDate, currentUser, users, events, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal }) => {
+const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirthdaysForDate, currentUser, users, events, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal, setShowEventSuggestions, setSelectedEventForSuggestions }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
   const getDaysInMonth = (date) => {
@@ -904,14 +934,16 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
           canEditEvent,
           handleDeleteEvent,
           setSuggestionEvent,
-          setShowSuggestionModal
+          setShowSuggestionModal,
+          setShowEventSuggestions,
+          setSelectedEventForSuggestions
         })
       ) : h('div', { className: 'text-center text-gray-500 py-8' }, 'Nenhum evento nesta data')
     )
   );
 };
 
-const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus, isUserOnVacation }) => {
+const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus, isUserOnVacation, getVacationInfo }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const filteredUsers = users.filter(u => 
     u.id !== currentUser.id &&
@@ -941,6 +973,8 @@ const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus, isUser
     h('div', { className: 'space-y-4' },
       ...filteredUsers.map(user => {
         const userStatus = getUserStatus(user.id);
+        const vacationInfo = getVacationInfo(user.id);
+        
         return h('div', { key: user.id, className: 'bg-white rounded-xl shadow-sm border p-4' },
           h('div', { className: 'flex items-center gap-3' },
             h('div', { className: 'text-4xl' }, user.photo),
@@ -953,6 +987,10 @@ const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus, isUser
               h('div', { className: 'flex items-center gap-2 mt-1' },
                 h('div', { className: `w-2 h-2 rounded-full ${statusColors[userStatus]}` }),
                 h('span', { className: 'text-xs text-gray-600' }, userStatus)
+              ),
+              vacationInfo && h('div', { className: 'mt-2 bg-orange-50 border border-orange-200 rounded p-2' },
+                h('p', { className: 'text-xs text-orange-800 font-medium' }, '🏖️ Férias'),
+                h('p', { className: 'text-xs text-orange-700' }, `${vacationInfo.start} até ${vacationInfo.end}`)
               )
             )
           )
@@ -1200,7 +1238,7 @@ const EditEventModal = ({ setShowEditEvent, handleEditEvent, categories, users, 
               })
             ),
             h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1'}, 'Hora'),
+              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Hora'),
               h('input', {
                 type: 'time',
                 value: formData.time,
@@ -1332,7 +1370,7 @@ const AddLocationModal = ({ setShowAddLocation, handleAddLocation }) => {
   );
 };
 
-const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus, handleUpdateVacation, isUserOnVacation }) => {
+const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus, handleUpdateVacation, isUserOnVacation, getVacationInfo }) => {
   const [vacationStart, setVacationStart] = useState(currentUser?.vacationStart || '');
   const [vacationEnd, setVacationEnd] = useState(currentUser?.vacationEnd || '');
   const onVacation = isUserOnVacation(currentUser.id);
@@ -1349,6 +1387,8 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
   };
 
   const clearVacation = () => {
+    setVacationStart('');
+    setVacationEnd('');
     handleUpdateVacation('', '');
   };
 
@@ -1521,6 +1561,48 @@ const SuggestionModal = ({ setShowSuggestionModal, handleAddSuggestion, suggesti
             onClick: onSubmit,
             className: 'w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition'
           }, 'Enviar Sugestão')
+        )
+      )
+    )
+  );
+};
+
+const EventSuggestionsModal = ({ setShowEventSuggestions, selectedEventForSuggestions, users }) => {
+  const suggestions = typeof selectedEventForSuggestions?.suggestions === 'string' 
+    ? JSON.parse(selectedEventForSuggestions.suggestions) 
+    : (selectedEventForSuggestions?.suggestions || []);
+
+  return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50' },
+    h('div', { className: 'bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto' },
+      h('div', { className: 'p-6' },
+        h('div', { className: 'flex items-center justify-between mb-6' },
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '💭 Sugestões do Evento'),
+          h('button', { onClick: () => setShowEventSuggestions(false) },
+            h(X, { className: 'text-gray-500', size: 24 })
+          )
+        ),
+        h('div', { className: 'mb-4' },
+          h('h3', { className: 'text-lg font-semibold text-gray-800' }, selectedEventForSuggestions?.title),
+          h('p', { className: 'text-sm text-gray-600' }, `${suggestions.length} sugestão(ões) recebida(s)`)
+        ),
+        h('div', { className: 'space-y-4' },
+          suggestions.length > 0 ? suggestions.map(sug => {
+            const user = users.find(u => u.id === sug.userId);
+            return h('div', { key: sug.id, className: 'bg-blue-50 border border-blue-200 rounded-lg p-4' },
+              h('div', { className: 'flex items-start gap-3' },
+                h('div', { className: 'text-2xl' }, user?.photo || '👤'),
+                h('div', { className: 'flex-1' },
+                  h('div', { className: 'flex items-center justify-between mb-2' },
+                    h('h4', { className: 'font-semibold text-gray-800' }, sug.userName),
+                    h('span', { className: 'text-xs text-gray-500' }, 
+                      new Date(sug.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                    )
+                  ),
+                  h('p', { className: 'text-gray-700 text-sm' }, sug.text)
+                )
+              )
+            );
+          }) : h('div', { className: 'text-center text-gray-500 py-8' }, 'Nenhuma sugestão ainda')
         )
       )
     )
