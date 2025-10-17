@@ -1023,7 +1023,7 @@ const EditReminderModal = ({ setShowEditReminder, handleEditReminder, users, cur
       )
     )
   );
-};// Copie este código exatamente após a PARTE 3
+};// PARTE 4 - COMPONENTES COMPLETOS (Cole após PARTE 3)
 
 const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, setShowCreateEvent, setShowAddLocation, users, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal, setShowEventSuggestions, setSelectedEventForSuggestions }) => {
   const userLocation = getUserLocation(currentUser.id);
@@ -1182,15 +1182,190 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
   );
 };
 
-const CalendarView = () => h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24 text-center text-gray-500' }, 'Calendário - Componente mantido da v2');
-const PeopleView = () => h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24 text-center text-gray-500' }, 'Pessoas - Componente mantido da v2');
-const CreateEventModal = () => h('div', null, 'CreateEvent - Manter da v2');
-const EditEventModal = () => h('div', null, 'EditEvent - Manter da v2');
-const AddLocationModal = () => h('div', null, 'AddLocation - Manter da v2');
-const ProfileModal = () => h('div', null, 'Profile - Manter da v2');
-const ParticipantsModal = () => h('div', null, 'Participants - Manter da v2');
-const SuggestionModal = () => h('div', null, 'Suggestion - Manter da v2');
-const EventSuggestionsModal = () => h('div', null, 'EventSuggestions - Manter da v2');
+const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirthdaysForDate, currentUser, users, events, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal, setShowEventSuggestions, setSelectedEventForSuggestions }) => {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    const days = [];
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(new Date(year, month, i));
+    }
+    return days;
+  };
+
+  const days = getDaysInMonth(currentMonth);
+  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const eventsForSelectedDate = getEventsForDate(selectedDate);
+  const birthdaysForSelectedDate = getBirthdaysForDate(selectedDate);
+
+  return h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24' },
+    h('div', { className: 'bg-white rounded-xl shadow-sm border p-4 mb-6' },
+      h('div', { className: 'flex items-center justify-between mb-4' },
+        h('button', {
+          onClick: () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)),
+          className: 'px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200'
+        }, '←'),
+        h('h2', { className: 'text-xl font-bold text-gray-800' },
+          `${monthNames[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`
+        ),
+        h('button', {
+          onClick: () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)),
+          className: 'px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200'
+        }, '→')
+      ),
+      h('div', { className: 'grid grid-cols-7 gap-2 mb-2' },
+        ...['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day =>
+          h('div', { key: day, className: 'text-center text-sm font-semibold text-gray-600 py-2' }, day)
+        )
+      ),
+      h('div', { className: 'grid grid-cols-7 gap-2' },
+        ...days.map((day, index) => {
+          if (!day) {
+            return h('div', { key: index, className: 'aspect-square' });
+          }
+
+          const hasEvents = getEventsForDate(day).length > 0;
+          const hasBirthdays = getBirthdaysForDate(day).length > 0;
+          const isSelected = selectedDate.toDateString() === day.toDateString();
+          const isToday = new Date().toDateString() === day.toDateString();
+
+          return h('button', {
+            key: index,
+            onClick: () => setSelectedDate(day),
+            className: `aspect-square rounded-lg p-2 text-sm relative ${
+              isSelected
+                ? 'bg-purple-600 text-white'
+                : isToday
+                ? 'bg-blue-100 text-blue-700 font-bold'
+                : 'bg-gray-50 hover:bg-gray-100'
+            }`
+          },
+            h('div', { className: 'font-medium' }, day.getDate()),
+            h('div', { className: 'flex gap-1 justify-center mt-1' },
+              hasEvents && h('div', { className: `w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-purple-500'}` }),
+              hasBirthdays && h('div', { className: `w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-pink-500'}` })
+            )
+          );
+        })
+      )
+    ),
+    h('div', { className: 'space-y-4' },
+      h('h3', { className: 'text-lg font-bold text-gray-800' },
+        selectedDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+      ),
+      birthdaysForSelectedDate.length > 0 && h('div', { className: 'bg-pink-50 border border-pink-200 rounded-xl p-4' },
+        h('h4', { className: 'font-bold text-pink-800 mb-3 flex items-center gap-2' },
+          h(Cake, { size: 20 }),
+          'Aniversariantes do Dia'
+        ),
+        ...birthdaysForSelectedDate.map(user =>
+          h('div', { key: user.id, className: 'flex items-center gap-3 mb-2' },
+            h('div', { className: 'text-2xl' }, user.photo),
+            h('div', null,
+              h('div', { className: 'font-medium' }, user.name),
+              h('div', { className: 'text-sm text-gray-600' },
+                `${new Date().getFullYear() - parseInt(user.birthDate.split('-')[0])} anos`
+              )
+            )
+          )
+        )
+      ),
+      eventsForSelectedDate.length > 0 ? eventsForSelectedDate.map(event =>
+        h(EventCard, { 
+          key: event.id, 
+          event, 
+          users, 
+          currentUser,
+          handleConfirmPresence,
+          setEditingEvent,
+          setShowEditEvent,
+          getUserStatus,
+          canEditEvent,
+          handleDeleteEvent,
+          setSuggestionEvent,
+          setShowSuggestionModal,
+          setShowEventSuggestions,
+          setSelectedEventForSuggestions
+        })
+      ) : h('div', { className: 'text-center text-gray-500 py-8' }, 'Nenhum evento nesta data')
+    )
+  );
+};
+
+const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus, isUserOnVacation, getVacationInfo }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const filteredUsers = users.filter(u => 
+    u.id !== currentUser.id &&
+    u.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const statusColors = {
+    'Em sala': 'bg-green-500',
+    'Em Reunião': 'bg-yellow-500',
+    'Visita na fazenda': 'bg-blue-500',
+    'Em Férias': 'bg-orange-500'
+  };
+
+  return h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24' },
+    h('div', { className: 'mb-6' },
+      h('div', { className: 'relative' },
+        h(Search, { className: 'absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400', size: 20 }),
+        h('input', {
+          type: 'text',
+          placeholder: 'Buscar pessoas...',
+          value: searchTerm,
+          onChange: (e) => setSearchTerm(e.target.value),
+          className: 'w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+        })
+      )
+    ),
+    h('div', { className: 'space-y-4' },
+      ...filteredUsers.map(user => {
+        const userStatus = getUserStatus(user.id);
+        const vacationInfo = getVacationInfo(user.id);
+        
+        return h('div', { key: user.id, className: 'bg-white rounded-xl shadow-sm border p-4' },
+          h('div', { className: 'flex items-center gap-3' },
+            h('div', { className: 'text-4xl' }, user.photo),
+            h('div', { className: 'flex-1' },
+              h('h4', { className: 'font-semibold text-gray-800' }, user.name),
+              h('p', { className: 'text-sm text-gray-500 flex items-center gap-1' },
+                h(MapPin, { size: 14 }),
+                getUserLocation(user.id)
+              ),
+              h('div', { className: 'flex items-center gap-2 mt-1' },
+                h('div', { className: `w-2 h-2 rounded-full ${statusColors[userStatus]}` }),
+                h('span', { className: 'text-xs text-gray-600' }, userStatus)
+              ),
+              vacationInfo && h('div', { className: 'mt-2 bg-orange-50 border border-orange-200 rounded p-2' },
+                h('p', { className: 'text-xs text-orange-800 font-medium' }, '🏖️ Férias'),
+                h('p', { className: 'text-xs text-orange-700' }, `${vacationInfo.start} até ${vacationInfo.end}`)
+              )
+            )
+          )
+        );
+      })
+    )
+  );
+};
+
+const CreateEventModal = () => h('div', null, 'Manter da v2');
+const EditEventModal = () => h('div', null, 'Manter da v2');
+const AddLocationModal = () => h('div', null, 'Manter da v2');
+const ProfileModal = () => h('div', null, 'Manter da v2');
+const ParticipantsModal = () => h('div', null, 'Manter da v2');
+const SuggestionModal = () => h('div', null, 'Manter da v2');
+const EventSuggestionsModal = () => h('div', null, 'Manter da v2');
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(App));
