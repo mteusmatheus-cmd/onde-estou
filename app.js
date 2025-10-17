@@ -1182,8 +1182,8 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
   );
 };
 
-//const CalendarView = () => h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24 text-center text-gray-500' }, 'Calendário - Componente mantido da v2');
-//const PeopleView = () => h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24 text-center text-gray-500' }, 'Pessoas - Componente mantido da v2');
+const CalendarView = () => h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24 text-center text-gray-500' }, 'Calendário - Componente mantido da v2');
+const PeopleView = () => h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24 text-center text-gray-500' }, 'Pessoas - Componente mantido da v2');
 const CreateEventModal = () => h('div', null, 'CreateEvent - Manter da v2');
 const EditEventModal = () => h('div', null, 'EditEvent - Manter da v2');
 const AddLocationModal = () => h('div', null, 'AddLocation - Manter da v2');
