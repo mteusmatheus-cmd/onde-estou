@@ -1187,8 +1187,6 @@ const AddLocationModal = ({ setShowAddLocation, handleAddLocation }) => {
         h('div', { className: 'flex items-center justify-between mb-6' },
           h('h2', { className: 'text-2xl font-bold text-gray-800' }, '📍 Atualizar Localização'),
           h('button',// 🎨 COMPONENTES DE MODAIS - PARTE 2
-const { useState, createElement: h } = React;
-const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake, StickyNote } = window.Icons;
 
 // Profile Modal
 const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus, handleUpdateVacation, isUserOnVacation, getVacationInfo }) => {
