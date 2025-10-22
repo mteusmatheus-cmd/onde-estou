@@ -462,7 +462,6 @@ const App = () => {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(App));// 📱 COMPONENTES DE VISUALIZAÇÃO
-const { useState, createElement: h } = React;
 const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake, StickyNote } = window.Icons;
 
 // Home View
