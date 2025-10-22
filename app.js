@@ -1,11 +1,13 @@
-// ⚙️ CONFIGURAÇÃO SUPABASE
+const { useState, createElement: h } = React;
+const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake, StickyNote } = window.Icons;
+// ?? CONFIGURA��O SUPABASE
 const SUPABASE_URL = 'https://ikczlcmcbrlhdlopkoqg.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3psY21jYnJsaGRsb3Brb3FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMjAxMTYsImV4cCI6MjA3NTY5NjExNn0.GxxdTvkzMwOMY6yO8HareaB4OC2ibVNTC_63EBjrDZc';
 
 const { useState, useEffect, createElement: h } = React;
-const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake, StickyNote } = window.Icons;
 
-// Funções de API
+
+// Fun��es de API
 const fetchData = async (key) => {
   try {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/dados?key=eq.${key}`, {
@@ -41,7 +43,7 @@ const saveData = async (key, value) => {
   }
 };
 
-// 🎯 COMPONENTE PRINCIPAL APP
+// ?? COMPONENTE PRINCIPAL APP
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -68,19 +70,19 @@ const App = () => {
   const [editingReminder, setEditingReminder] = useState(null);
 
   const categories = [
-    'Comemoração aniversário',
-    'Reunião',
+    'Comemora��o anivers�rio',
+    'Reuni�o',
     'Treinamento',
-    'Integração',
-    'Café com DH',
+    'Integra��o',
+    'Caf� com DH',
     'Indicadores',
-    'Aniversáriantes do mês',
+    'Anivers�riantes do m�s',
     'Outros'
   ];
 
   const statusOptions = [
     'Em sala',
-    'Em Reunião',
+    'Em Reuni�o',
     'Visita na fazenda'
   ];
 
@@ -121,7 +123,7 @@ const App = () => {
       email: userData.email,
       password: userData.password,
       birthDate: userData.birthDate,
-      photo: '👤',
+      photo: '??',
       interests: '',
       status: 'Em sala',
       role: 'user',
@@ -136,7 +138,7 @@ const App = () => {
     setCurrentUser(newUser);
     setIsLoggedIn(true);
     setShowRegister(false);
-    alert('✅ Conta criada com sucesso!');
+    alert('? Conta criada com sucesso!');
   };
 
   const handleCreateEvent = async (eventData) => {
@@ -315,7 +317,7 @@ const App = () => {
   };
 
   const getUserLocation = (userId) => {
-    if (isUserOnVacation(userId)) return 'Em Férias 🏖️';
+    if (isUserOnVacation(userId)) return 'Em F�rias ???';
     
     const now = new Date();
     const userLocations = locations.filter(l => l.userId == userId);
@@ -327,11 +329,11 @@ const App = () => {
         return loc.location;
       }
     }
-    return 'Localização não informada';
+    return 'Localiza��o n�o informada';
   };
 
   const getUserStatus = (userId) => {
-    if (isUserOnVacation(userId)) return 'Em Férias';
+    if (isUserOnVacation(userId)) return 'Em F�rias';
     const user = users.find(u => u.id == userId);
     return user?.status || 'Em sala';
   };
@@ -394,9 +396,9 @@ const App = () => {
   if (loading) {
     return h('div', { className: 'min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4' },
       h('div', { className: 'text-center bg-white rounded-2xl p-8 max-w-md' },
-        h('div', { className: 'text-6xl mb-4 animate-bounce' }, '📍'),
+        h('div', { className: 'text-6xl mb-4 animate-bounce' }, '??'),
         h('p', { className: 'text-gray-800 text-xl font-semibold mb-2' }, 'Onde Estou'),
-        h('p', { className: 'text-gray-600' }, 'Conectando à base compartilhada...')
+        h('p', { className: 'text-gray-600' }, 'Conectando � base compartilhada...')
       )
     );
   }
@@ -461,7 +463,8 @@ const App = () => {
 };
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(React.createElement(App));// 📱 COMPONENTES DE VISUALIZAÇÃO
+root.render(React.createElement(App));// ?? COMPONENTES DE VISUALIZA��O
+
 
 
 // Home View
@@ -478,7 +481,7 @@ const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, s
 
   return h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24' },
     h('div', { className: 'bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl p-6 text-white mb-6' },
-      h('h2', { className: 'text-2xl font-bold mb-2' }, `Olá, ${currentUser?.name.split(' ')[0]}! 👋`),
+      h('h2', { className: 'text-2xl font-bold mb-2' }, `Ol�, ${currentUser?.name.split(' ')[0]}! ??`),
       h('div', { className: 'flex items-center gap-2 mt-3' },
         h(MapPin, { size: 20 }),
         h('span', null, userLocation)
@@ -488,13 +491,13 @@ const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, s
         className: 'mt-4 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg flex items-center gap-2 transition'
       },
         h(Plus, { size: 16 }),
-        'Atualizar Localização'
+        'Atualizar Localiza��o'
       )
     ),
     todayBirthdays.length > 0 && h('div', { className: 'bg-pink-50 border border-pink-200 rounded-xl p-4 mb-6' },
       h('h3', { className: 'font-bold text-pink-800 mb-3 flex items-center gap-2' },
         h(Gift, { size: 20 }),
-        'Aniversariantes de Hoje 🎉'
+        'Aniversariantes de Hoje ??'
       ),
       ...todayBirthdays.map(user =>
         h('div', { key: user.id, className: 'flex items-center gap-3 mb-2' },
@@ -504,7 +507,7 @@ const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, s
       )
     ),
     h('div', { className: 'flex items-center justify-between mb-4' },
-      h('h3', { className: 'text-lg font-bold text-gray-800' }, 'Próximos Eventos'),
+      h('h3', { className: 'text-lg font-bold text-gray-800' }, 'Pr�ximos Eventos'),
       h('button', {
         onClick: () => setShowCreateEvent(true),
         className: 'bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition'
@@ -531,7 +534,7 @@ const HomeView = ({ currentUser, getUserLocation, getBirthdaysForDate, events, s
           setShowEventSuggestions,
           setSelectedEventForSuggestions
         })
-      ) : h('div', { className: 'text-center text-gray-500 py-8 bg-white rounded-xl' }, 'Nenhum evento próximo')
+      ) : h('div', { className: 'text-center text-gray-500 py-8 bg-white rounded-xl' }, 'Nenhum evento pr�ximo')
     )
   );
 };
@@ -559,7 +562,7 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
   };
 
   const days = getDaysInMonth(currentMonth);
-  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const monthNames = ['Janeiro', 'Fevereiro', 'Mar�o', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const eventsForSelectedDate = getEventsForDate(selectedDate);
   const birthdaysForSelectedDate = getBirthdaysForDate(selectedDate);
 
@@ -569,17 +572,17 @@ const CalendarView = ({ selectedDate, setSelectedDate, getEventsForDate, getBirt
         h('button', {
           onClick: () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)),
           className: 'px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200'
-        }, '←'),
+        }, '?'),
         h('h2', { className: 'text-xl font-bold text-gray-800' },
           `${monthNames[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`
         ),
         h('button', {
           onClick: () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)),
           className: 'px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200'
-        }, '→')
+        }, '?')
       ),
       h('div', { className: 'grid grid-cols-7 gap-2 mb-2' },
-        ...['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day =>
+        ...['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'S�b'].map(day =>
           h('div', { key: day, className: 'text-center text-sm font-semibold text-gray-600 py-2' }, day)
         )
       ),
@@ -667,9 +670,9 @@ const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus, isUser
 
   const statusColors = {
     'Em sala': 'bg-green-500',
-    'Em Reunião': 'bg-yellow-500',
+    'Em Reuni�o': 'bg-yellow-500',
     'Visita na fazenda': 'bg-blue-500',
-    'Em Férias': 'bg-orange-500'
+    'Em F�rias': 'bg-orange-500'
   };
 
   return h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24' },
@@ -704,8 +707,8 @@ const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus, isUser
                 h('span', { className: 'text-xs text-gray-600' }, userStatus)
               ),
               vacationInfo && h('div', { className: 'mt-2 bg-orange-50 border border-orange-200 rounded p-2' },
-                h('p', { className: 'text-xs text-orange-800 font-medium' }, '🏖️ Férias'),
-                h('p', { className: 'text-xs text-orange-700' }, `${vacationInfo.start} até ${vacationInfo.end}`)
+                h('p', { className: 'text-xs text-orange-800 font-medium' }, '??? F�rias'),
+                h('p', { className: 'text-xs text-orange-700' }, `${vacationInfo.start} at� ${vacationInfo.end}`)
               )
             )
           )
@@ -719,7 +722,7 @@ const PeopleView = ({ users, currentUser, getUserLocation, getUserStatus, isUser
 const RemindersView = ({ reminders, users, currentUser, setShowCreateReminder, canEditReminder, handleDeleteReminder, setEditingReminder, setShowEditReminder }) => {
   return h('div', { className: 'max-w-6xl mx-auto px-4 py-6 pb-24' },
     h('div', { className: 'flex items-center justify-between mb-6' },
-      h('h2', { className: 'text-2xl font-bold text-gray-800' }, '📝 Lembretes'),
+      h('h2', { className: 'text-2xl font-bold text-gray-800' }, '?? Lembretes'),
       h('button', {
         onClick: () => setShowCreateReminder(true),
         className: 'bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition'
@@ -742,7 +745,7 @@ const RemindersView = ({ reminders, users, currentUser, setShowCreateReminder, c
           h('div', { className: 'flex items-start justify-between mb-3' },
             h('div', { className: 'flex-1' },
               h('h3', { className: 'font-bold text-gray-800 text-lg mb-1' }, reminder.title),
-              isExpiringSoon && h('span', { className: 'text-xs bg-orange-500 text-white px-2 py-1 rounded-full' }, '⚠️ Expira em breve')
+              isExpiringSoon && h('span', { className: 'text-xs bg-orange-500 text-white px-2 py-1 rounded-full' }, '?? Expira em breve')
             ),
             h('div', { className: 'flex items-center gap-2' },
               canEdit && h('button', {
@@ -751,33 +754,33 @@ const RemindersView = ({ reminders, users, currentUser, setShowCreateReminder, c
                   setShowEditReminder(true);
                 },
                 className: 'text-blue-600 hover:text-blue-700 text-sm font-medium'
-              }, '✏️'),
+              }, '??'),
               canEdit && h('button', {
                 onClick: () => handleDeleteReminder(reminder.id),
                 className: 'text-red-600 hover:text-red-700 text-sm font-medium'
-              }, '🗑️')
+              }, '???')
             )
           ),
           h('p', { className: 'text-gray-700 mb-3 whitespace-pre-wrap' }, reminder.description),
           h('div', { className: 'flex items-center gap-4 text-sm text-gray-600' },
             h('div', { className: 'flex items-center gap-1' },
-              h('span', null, '👤'),
-              h('span', null, creator?.name || 'Usuário')
+              h('span', null, '??'),
+              h('span', null, creator?.name || 'Usu�rio')
             ),
             reminder.hasExpiration && reminder.expirationDate && h('div', { className: 'flex items-center gap-1' },
               h(Calendar, { size: 16 }),
               h('span', null, `Expira: ${new Date(reminder.expirationDate).toLocaleDateString('pt-BR')}`)
             ),
             !reminder.hasExpiration && h('div', { className: 'flex items-center gap-1 text-green-600' },
-              h('span', null, '♾️'),
+              h('span', null, '??'),
               h('span', null, 'Sem data limite')
             )
           )
         );
       }) : h('div', { className: 'text-center text-gray-500 py-12 bg-white rounded-xl' },
-        h('div', { className: 'text-6xl mb-4' }, '📝'),
+        h('div', { className: 'text-6xl mb-4' }, '??'),
         h('p', null, 'Nenhum lembrete ativo'),
-        h('p', { className: 'text-sm mt-2' }, 'Crie um lembrete para começar')
+        h('p', { className: 'text-sm mt-2' }, 'Crie um lembrete para come�ar')
       )
     )
   );
@@ -826,25 +829,25 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
             setShowEditEvent(true);
           },
           className: 'text-blue-600 hover:text-blue-700 text-sm font-medium'
-        }, '✏️'),
+        }, '??'),
         canEdit && h('button', {
           onClick: () => handleDeleteEvent(event.id),
           className: 'text-red-600 hover:text-red-700 text-sm font-medium'
-        }, '🗑️'),
+        }, '???'),
         isCreator && suggestions.length > 0 && h('button', {
           onClick: () => {
             setSelectedEventForSuggestions(event);
             setShowEventSuggestions(true);
           },
           className: 'text-blue-600 hover:text-blue-700 text-sm font-medium'
-        }, `💭 ${suggestions.length}`)
+        }, `?? ${suggestions.length}`)
       )
     ),
     h('p', { className: 'text-gray-600 text-sm mb-3' }, event.description),
     h('div', { className: 'space-y-2 mb-3' },
       h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
         h(Calendar, { size: 16 }),
-        h('span', null, `${formattedDate} às ${formattedTime}`)
+        h('span', null, `${formattedDate} �s ${formattedTime}`)
       ),
       h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
         h(MapPin, { size: 16 }),
@@ -852,12 +855,12 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
       ),
       h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
         h(Users, { size: 16 }),
-        h('span', null, `${confirmed.length} confirmados / ${rejected.length} não podem / ${participants.length} total`)
+        h('span', null, `${confirmed.length} confirmados / ${rejected.length} n�o podem / ${participants.length} total`)
       )
     ),
     h('div', { className: 'flex items-center gap-2 mb-4' },
-      h('div', { className: 'text-xl' }, creator?.photo || '👤'),
-      h('span', { className: 'text-sm text-gray-600' }, `Criado por ${creator?.name || 'Usuário'}`)
+      h('div', { className: 'text-xl' }, creator?.photo || '??'),
+      h('span', { className: 'text-sm text-gray-600' }, `Criado por ${creator?.name || 'Usu�rio'}`)
     ),
     isParticipant && h('div', { className: 'flex gap-2' },
       h('button', {
@@ -867,7 +870,7 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
             ? 'bg-green-100 text-green-700'
             : 'bg-gray-100 text-gray-700 hover:bg-green-50'
         }`
-      }, isConfirmed ? '✓ Confirmado' : 'Confirmar'),
+      }, isConfirmed ? '? Confirmado' : 'Confirmar'),
       h('button', {
         onClick: () => handleConfirmPresence(event.id, 'rejected'),
         className: `flex-1 py-2 rounded-lg font-semibold transition ${
@@ -875,18 +878,18 @@ const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditin
             ? 'bg-red-100 text-red-700'
             : 'bg-gray-100 text-gray-700 hover:bg-red-50'
         }`
-      }, isRejected ? '✗ Não vou' : 'Não vou'),
+      }, isRejected ? '? N�o vou' : 'N�o vou'),
       h('button', {
         onClick: () => {
           setSuggestionEvent(event);
           setShowSuggestionModal(true);
         },
         className: 'flex-1 bg-blue-100 text-blue-700 py-2 rounded-lg font-semibold hover:bg-blue-200 transition'
-      }, '💡 Sugestão')
+      }, '?? Sugest�o')
     )
-  );// 🎨 COMPONENTES DE MODAIS - PARTE 1
-const { useState, createElement: h } = React;
-const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake, StickyNote } = window.Icons;
+  );// ?? COMPONENTES DE MODAIS - PARTE 1
+
+
 
 // Create Event Modal
 const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, users, currentUser }) => {
@@ -902,7 +905,7 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
 
   const onSubmit = () => {
     if (!formData.title || !formData.date || !formData.time || !formData.location) {
-      alert('Preencha todos os campos obrigatórios');
+      alert('Preencha todos os campos obrigat�rios');
       return;
     }
     if (formData.participants.length === 0) {
@@ -925,14 +928,14 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
     h('div', { className: 'bg-white rounded-2xl max-w-md w-full my-8' },
       h('div', { className: 'p-6' },
         h('div', { className: 'flex items-center justify-between mb-6' },
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '📅 Criar Evento'),
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '?? Criar Evento'),
           h('button', { onClick: () => setShowCreateEvent(false) },
             h(X, { className: 'text-gray-500', size: 24 })
           )
         ),
         h('div', { className: 'space-y-4 max-h-96 overflow-y-auto' },
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'T�tulo *'),
             h('input', {
               type: 'text',
               value: formData.title,
@@ -942,7 +945,7 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
             })
           ),
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição *'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descri��o *'),
             h('textarea', {
               value: formData.description,
               onChange: (e) => setFormData({...formData, description: e.target.value}),
@@ -979,7 +982,7 @@ const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, u
               value: formData.location,
               onChange: (e) => setFormData({...formData, location: e.target.value}),
               className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
-              placeholder: 'Onde será o evento'
+              placeholder: 'Onde ser� o evento'
             })
           ),
           h('div', null,
@@ -1036,7 +1039,7 @@ const EditEventModal = ({ setShowEditEvent, handleEditEvent, categories, users, 
 
   const onSubmit = () => {
     if (!formData.title || !formData.date || !formData.time || !formData.location) {
-      alert('Preencha todos os campos obrigatórios');
+      alert('Preencha todos os campos obrigat�rios');
       return;
     }
     if (formData.participants.length === 0) {
@@ -1063,14 +1066,14 @@ const EditEventModal = ({ setShowEditEvent, handleEditEvent, categories, users, 
     h('div', { className: 'bg-white rounded-2xl max-w-md w-full my-8' },
       h('div', { className: 'p-6' },
         h('div', { className: 'flex items-center justify-between mb-6' },
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '✏️ Editar Evento'),
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '?? Editar Evento'),
           h('button', { onClick: () => setShowEditEvent(false) },
             h(X, { className: 'text-gray-500', size: 24 })
           )
         ),
         h('div', { className: 'space-y-4 max-h-96 overflow-y-auto' },
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'T�tulo *'),
             h('input', {
               type: 'text',
               value: formData.title,
@@ -1079,7 +1082,7 @@ const EditEventModal = ({ setShowEditEvent, handleEditEvent, categories, users, 
             })
           ),
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição *'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descri��o *'),
             h('textarea', {
               value: formData.description,
               onChange: (e) => setFormData({...formData, description: e.target.value}),
@@ -1147,7 +1150,7 @@ const EditEventModal = ({ setShowEditEvent, handleEditEvent, categories, users, 
           h('button', {
             onClick: onSubmit,
             className: 'w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition'
-          }, 'Salvar Alterações')
+          }, 'Salvar Altera��es')
         )
       )
     )
@@ -1174,7 +1177,7 @@ const AddLocationModal = ({ setShowAddLocation, handleAddLocation }) => {
     const end = new Date(`${formData.endDate}T${formData.endTime}`);
 
     if (end <= start) {
-      alert('A data/hora final deve ser posterior à inicial');
+      alert('A data/hora final deve ser posterior � inicial');
       return;
     }
 
@@ -1185,8 +1188,10 @@ const AddLocationModal = ({ setShowAddLocation, handleAddLocation }) => {
     h('div', { className: 'bg-white rounded-2xl max-w-md w-full' },
       h('div', { className: 'p-6' },
         h('div', { className: 'flex items-center justify-between mb-6' },
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '📍 Atualizar Localização'),
-          h('button',// 🎨 COMPONENTES DE MODAIS - PARTE 2
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '?? Atualizar Localiza��o'),
+          h('button',// ?? COMPONENTES DE MODAIS - PARTE 2
+
+
 
 // Profile Modal
 const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLoggedIn, setCurrentUser, getUserStatus, handleUpdateVacation, isUserOnVacation, getVacationInfo }) => {
@@ -1198,7 +1203,7 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
 
   const onSaveVacation = () => {
     if (!vacationData.start || !vacationData.end) {
-      alert('Preencha as datas de início e fim das férias');
+      alert('Preencha as datas de in�cio e fim das f�rias');
       return;
     }
 
@@ -1206,20 +1211,20 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
     const end = new Date(vacationData.end);
 
     if (end <= start) {
-      alert('A data de término deve ser posterior à data de início');
+      alert('A data de t�rmino deve ser posterior � data de in�cio');
       return;
     }
 
     handleUpdateVacation(vacationData.start, vacationData.end);
     setVacationMode(false);
-    alert('✅ Período de férias atualizado!');
+    alert('? Per�odo de f�rias atualizado!');
   };
 
   const onClearVacation = () => {
-    if (confirm('Deseja remover o período de férias?')) {
+    if (confirm('Deseja remover o per�odo de f�rias?')) {
       handleUpdateVacation('', '');
       setVacationData({ start: '', end: '' });
-      alert('✅ Período de férias removido!');
+      alert('? Per�odo de f�rias removido!');
     }
   };
 
@@ -1254,7 +1259,7 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
         h('div', { className: 'space-y-4 mb-6' },
           h('div', { className: 'bg-gray-50 p-4 rounded-lg' },
             h('div', { className: 'flex items-center justify-between mb-2' },
-              h('h4', { className: 'font-semibold text-gray-800' }, '🏖️ Período de Férias'),
+              h('h4', { className: 'font-semibold text-gray-800' }, '??? Per�odo de F�rias'),
               !vacationMode && h('button', {
                 onClick: () => setVacationMode(true),
                 className: 'text-sm text-blue-600 hover:text-blue-700'
@@ -1262,21 +1267,21 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
             ),
             vacationInfo && !vacationMode ? h('div', { className: 'mt-2' },
               h('p', { className: 'text-sm text-gray-700' },
-                `${vacationInfo.start} até ${vacationInfo.end}`
+                `${vacationInfo.start} at� ${vacationInfo.end}`
               ),
               vacationInfo.isActive && h('span', { className: 'inline-block mt-2 text-xs bg-orange-500 text-white px-2 py-1 rounded-full' },
-                '✓ Em férias agora'
+                '? Em f�rias agora'
               ),
               h('button', {
                 onClick: onClearVacation,
                 className: 'mt-2 text-sm text-red-600 hover:text-red-700'
-              }, 'Remover férias')
+              }, 'Remover f�rias')
             ) : !vacationMode && h('p', { className: 'text-sm text-gray-500 mt-2' },
-              'Nenhum período configurado'
+              'Nenhum per�odo configurado'
             ),
             vacationMode && h('div', { className: 'mt-3 space-y-3' },
               h('div', null,
-                h('label', { className: 'block text-xs font-medium text-gray-700 mb-1' }, 'Data de Início'),
+                h('label', { className: 'block text-xs font-medium text-gray-700 mb-1' }, 'Data de In�cio'),
                 h('input', {
                   type: 'date',
                   value: vacationData.start,
@@ -1285,7 +1290,7 @@ const ProfileModal = ({ currentUser, getUserLocation, setShowProfile, setIsLogge
                 })
               ),
               h('div', null,
-                h('label', { className: 'block text-xs font-medium text-gray-700 mb-1' }, 'Data de Término'),
+                h('label', { className: 'block text-xs font-medium text-gray-700 mb-1' }, 'Data de T�rmino'),
                 h('input', {
                   type: 'date',
                   value: vacationData.end,
@@ -1327,17 +1332,17 @@ const CreateReminderModal = ({ setShowCreateReminder, handleCreateReminder, user
 
   const onSubmit = () => {
     if (!formData.title || !formData.description) {
-      alert('Por favor, preencha o título e a descrição');
+      alert('Por favor, preencha o t�tulo e a descri��o');
       return;
     }
 
     if (formData.hasExpiration && !formData.expirationDate) {
-      alert('Por favor, defina a data de expiração');
+      alert('Por favor, defina a data de expira��o');
       return;
     }
 
     if (formData.visibleTo.length === 0) {
-      alert('Por favor, selecione pelo menos um destinatário');
+      alert('Por favor, selecione pelo menos um destinat�rio');
       return;
     }
 
@@ -1367,24 +1372,24 @@ const CreateReminderModal = ({ setShowCreateReminder, handleCreateReminder, user
     h('div', { className: 'bg-white rounded-2xl max-w-md w-full my-8' },
       h('div', { className: 'p-6' },
         h('div', { className: 'flex items-center justify-between mb-6' },
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '📝 Novo Lembrete'),
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '?? Novo Lembrete'),
           h('button', { onClick: () => setShowCreateReminder(false) },
             h(X, { className: 'text-gray-500', size: 24 })
           )
         ),
         h('div', { className: 'space-y-4 max-h-96 overflow-y-auto' },
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'T�tulo *'),
             h('input', {
               type: 'text',
               value: formData.title,
               onChange: (e) => setFormData({...formData, title: e.target.value}),
               className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
-              placeholder: 'Ex: Reunião com fornecedor'
+              placeholder: 'Ex: Reuni�o com fornecedor'
             })
           ),
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição *'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descri��o *'),
             h('textarea', {
               value: formData.description,
               onChange: (e) => setFormData({...formData, description: e.target.value}),
@@ -1401,10 +1406,10 @@ const CreateReminderModal = ({ setShowCreateReminder, handleCreateReminder, user
                 onChange: (e) => setFormData({...formData, hasExpiration: e.target.checked}),
                 className: 'w-4 h-4 text-purple-600 rounded focus:ring-purple-500'
               }),
-              h('span', { className: 'text-sm font-medium text-gray-700' }, 'Definir data de expiração')
+              h('span', { className: 'text-sm font-medium text-gray-700' }, 'Definir data de expira��o')
             ),
             formData.hasExpiration && h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data de Expiração'),
+              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data de Expira��o'),
               h('input', {
                 type: 'date',
                 value: formData.expirationDate,
@@ -1440,7 +1445,7 @@ const CreateReminderModal = ({ setShowCreateReminder, handleCreateReminder, user
               )
             ),
             h('p', { className: 'text-xs text-gray-500 mt-2' },
-              formData.visibleTo.length === 0 ? 'Selecione destinatários' : `${formData.visibleTo.length} pessoa(s) selecionada(s)`
+              formData.visibleTo.length === 0 ? 'Selecione destinat�rios' : `${formData.visibleTo.length} pessoa(s) selecionada(s)`
             )
           ),
           h('button', {
@@ -1464,12 +1469,12 @@ const EditReminderModal = ({ setShowEditReminder, handleEditReminder, users, cur
 
   const onSubmit = () => {
     if (!formData.title || !formData.description) {
-      alert('Por favor, preencha o título e a descrição');
+      alert('Por favor, preencha o t�tulo e a descri��o');
       return;
     }
 
     if (formData.hasExpiration && !formData.expirationDate) {
-      alert('Por favor, defina a data de expiração');
+      alert('Por favor, defina a data de expira��o');
       return;
     }
 
@@ -1480,24 +1485,24 @@ const EditReminderModal = ({ setShowEditReminder, handleEditReminder, users, cur
     h('div', { className: 'bg-white rounded-2xl max-w-md w-full my-8' },
       h('div', { className: 'p-6' },
         h('div', { className: 'flex items-center justify-between mb-6' },
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '✏️ Editar Lembrete'),
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '?? Editar Lembrete'),
           h('button', { onClick: () => setShowEditReminder(false) },
             h(X, { className: 'text-gray-500', size: 24 })
           )
         ),
         h('div', { className: 'space-y-4 max-h-96 overflow-y-auto' },
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'T�tulo *'),
             h('input', {
               type: 'text',
               value: formData.title,
               onChange: (e) => setFormData({...formData, title: e.target.value}),
               className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500',
-              placeholder: 'Ex: Reunião com fornecedor'
+              placeholder: 'Ex: Reuni�o com fornecedor'
             })
           ),
           h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição *'),
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descri��o *'),
             h('textarea', {
               value: formData.description,
               onChange: (e) => setFormData({...formData, description: e.target.value}),
@@ -1514,10 +1519,10 @@ const EditReminderModal = ({ setShowEditReminder, handleEditReminder, users, cur
                 onChange: (e) => setFormData({...formData, hasExpiration: e.target.checked}),
                 className: 'w-4 h-4 text-purple-600 rounded focus:ring-purple-500'
               }),
-              h('span', { className: 'text-sm font-medium text-gray-700' }, 'Definir data de expiração')
+              h('span', { className: 'text-sm font-medium text-gray-700' }, 'Definir data de expira��o')
             ),
             formData.hasExpiration && h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data de Expiração'),
+              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data de Expira��o'),
               h('input', {
                 type: 'date',
                 value: formData.expirationDate,
@@ -1530,7 +1535,7 @@ const EditReminderModal = ({ setShowEditReminder, handleEditReminder, users, cur
           h('button', {
             onClick: onSubmit,
             className: 'w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition'
-          }, 'Salvar Alterações')
+          }, 'Salvar Altera��es')
         )
       )
     )
