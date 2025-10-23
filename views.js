@@ -1,6 +1,5 @@
 // 📱 COMPONENTES DE VISUALIZAÇÃO
-const { useState, createElement: h } = React;
-const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake, StickyNote } = window.Icons;
+// Nota: useState e h já estão declarados globalmente, não redeclarar aqui
 
 // Event Card
 const EventCard = ({ event, users, currentUser, handleConfirmPresence, setEditingEvent, setShowEditEvent, getUserStatus, canEditEvent, handleDeleteEvent, setSuggestionEvent, setShowSuggestionModal, setShowEventSuggestions, setSelectedEventForSuggestions }) => {
