@@ -1,6 +1,5 @@
 // 🎨 COMPONENTES DE MODAIS
-const { useState, createElement: h } = React;
-const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake, StickyNote } = window.Icons;
+// Nota: useState e h já estão declarados globalmente, não redeclarar aqui
 
 // Create Event Modal
 const CreateEventModal = ({ setShowCreateEvent, handleCreateEvent, categories, users, currentUser }) => {
