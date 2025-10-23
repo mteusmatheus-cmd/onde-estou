@@ -80,7 +80,8 @@ const App = () => {
   const statusOptions = [
     'Em sala',
     'Em Reunião',
-    'Visita na fazenda'
+    'Visita na fazenda',
+    'Em Férias'
   ];
 
   useEffect(() => {
