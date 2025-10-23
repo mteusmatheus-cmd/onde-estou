@@ -2,9 +2,7 @@
 const SUPABASE_URL = 'https://ikczlcmcbrlhdlopkoqg.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3psY21jYnJsaGRsb3Brb3FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMjAxMTYsImV4cCI6MjA3NTY5NjExNn0.GxxdTvkzMwOMY6yO8HareaB4OC2ibVNTC_63EBjrDZc';
 
-// 🎯 DECLARAÇÕES GLOBAIS (UMA ÚNICA VEZ)
-const { useState, useEffect, createElement: h } = React;
-const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake, StickyNote } = window.Icons;
+// Nota: useState, useEffect e h já estão declarados em globals.js
 
 // Funções de API
 const fetchData = async (key) => {
