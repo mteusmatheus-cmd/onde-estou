@@ -1,6 +1,5 @@
 // 🔐 COMPONENTES DE AUTENTICAÇÃO
-const { useState, createElement: h } = React;
-const { MapPin, Calendar, Users, Plus, Bell, X, Search, Gift, Cake, StickyNote } = window.Icons;
+// Nota: useState e h já estão declarados globalmente, não redeclarar aqui
 
 // Login Screen
 const LoginScreen = ({ handleLogin, setShowRegister }) => {
