@@ -375,14 +375,7 @@ const StatusModal = ({ setShowStatusModal, handleUpdateStatus, statusOptions, cu
             h(X, { className: 'text-gray-500', size: 24 })
           )
         ),
-        isUserOnVacation(currentUser.id) ? h('div', { className: 'text-center py-4' },
-          h('div', { className: 'text-6xl mb-4' }, '🏖️'),
-          h('p', { className: 'text-gray-600 mb-4' }, 'Você está de férias! O status é atualizado automaticamente.'),
-          h('button', {
-            onClick: () => setShowStatusModal(false),
-            className: 'w-full bg-gray-600 text-white py-3 rounded-lg font-semibold hover:bg-gray-700 transition'
-          }, 'Fechar')
-        ) : h('div', { className: 'space-y-2' },
+        h('div', { className: 'space-y-2' },
           ...statusOptions.map(status =>
             h('button', {
               key: status,
