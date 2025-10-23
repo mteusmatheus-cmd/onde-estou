@@ -16,10 +16,18 @@
   <div id="root"></div>
   
   <!-- ORDEM CORRETA DE CARREGAMENTO -->
+  <!-- 1. Ícones primeiro -->
   <script src="icons.js"></script>
+  
+  <!-- 2. Variáveis globais (React hooks e ícones) -->
+  <script src="globals.js"></script>
+  
+  <!-- 3. Componentes (podem usar as variáveis globais) -->
   <script src="auth.js"></script>
   <script src="views.js"></script>
   <script src="modals.js"></script>
+  
+  <!-- 4. App principal por último -->
   <script src="app.js"></script>
 </body>
 </html>
