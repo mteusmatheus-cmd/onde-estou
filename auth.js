@@ -103,7 +103,7 @@ const RegisterScreen = ({ handleRegister, setShowRegister, users }) => {
       ),
       h('form', { onSubmit, className: 'space-y-4' },
         h('div', null,
-          h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Nome Completo'),
+          h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Nome Completo *'),
           h('input', {
             type: 'text',
             value: formData.name,
@@ -113,7 +113,7 @@ const RegisterScreen = ({ handleRegister, setShowRegister, users }) => {
           })
         ),
         h('div', null,
-          h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Email'),
+          h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Email *'),
           h('input', {
             type: 'email',
             value: formData.email,
@@ -123,16 +123,17 @@ const RegisterScreen = ({ handleRegister, setShowRegister, users }) => {
           })
         ),
         h('div', null,
-          h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data de Nascimento'),
+          h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Data de Nascimento *'),
           h('input', {
             type: 'date',
             value: formData.birthDate,
             onChange: (e) => setFormData({...formData, birthDate: e.target.value}),
+            max: new Date().toISOString().split('T')[0],
             className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
           })
         ),
         h('div', null,
-          h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Senha'),
+          h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Senha *'),
           h('input', {
             type: 'password',
             value: formData.password,
@@ -142,7 +143,7 @@ const RegisterScreen = ({ handleRegister, setShowRegister, users }) => {
           })
         ),
         h('div', null,
-          h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Confirmar Senha'),
+          h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Confirmar Senha *'),
           h('input', {
             type: 'password',
             value: formData.confirmPassword,
